@@ -450,9 +450,21 @@ public static partial class RecordFields
 
     private static RecordValue ToRecordValue(ITranslatedStringGetter? value)
     {
-        return value is null
-            ? RecordValue.Null
-            : RecordValue.FromTranslatedString(value.TargetLanguage, value);
+        if (value is null)
+        {
+            return RecordValue.Null;
+        }
+
+        var values = value.ToArray();
+        var targetLanguage = values.Any(pair => pair.Key == value.TargetLanguage && pair.Value is not null)
+            ? value.TargetLanguage
+            : values
+                .Where(pair => pair.Value is not null)
+                .OrderBy(pair => pair.Key)
+                .Select(pair => (Language?)pair.Key)
+                .FirstOrDefault()
+                ?? throw new RecordEditingException("The native translated string does not contain any non-null language values.");
+        return RecordValue.FromTranslatedString(targetLanguage, values);
     }
 
     private static TranslatedString? ToTranslatedString(RecordValue? value)

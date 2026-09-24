@@ -5,5 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CreationsForge.Engine\CreationsForge.Engine.csproj" />
     <ProjectReference Include="..\..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
+    <ProjectReference Include="..\..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
+    <ProjectReference Include="..\..\CreationsForge.Starfield\CreationsForge.Starfield.csproj" />
   </ItemGroup>
 </Project>

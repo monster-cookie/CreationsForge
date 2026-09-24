@@ -6,6 +6,7 @@ namespace CreationsForge.Engine.Workspaces;
 /// <summary>Reports constant-time plugin workspace and output state.</summary>
 public sealed class PluginWorkspaceState
 {
+    /// <summary>Initializes a complete constant-time workspace state snapshot.</summary>
     internal PluginWorkspaceState(
         GameRelease release,
         ModKey outputModKey,
@@ -14,7 +15,8 @@ public sealed class PluginWorkspaceState
         PluginTextStorageMode textStorageMode,
         bool isNewOutput,
         bool isDirty,
-        ulong revision)
+        ulong revision,
+        bool requiresReopen = false)
     {
         Release = release;
         OutputModKey = outputModKey;
@@ -24,6 +26,7 @@ public sealed class PluginWorkspaceState
         IsNewOutput = isNewOutput;
         IsDirty = isDirty;
         Revision = revision;
+        RequiresReopen = requiresReopen;
     }
 
     /// <summary>Gets the workspace game release.</summary>
@@ -49,4 +52,7 @@ public sealed class PluginWorkspaceState
 
     /// <summary>Gets the logical output revision.</summary>
     public ulong Revision { get; }
+
+    /// <summary>Gets whether persistence reached a state that requires closing and reopening this workspace.</summary>
+    public bool RequiresReopen { get; }
 }

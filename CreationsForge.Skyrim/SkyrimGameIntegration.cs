@@ -4,10 +4,10 @@ using CreationsForge.Engine.Records;
 using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Binary.Parameters;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Skyrim;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Skyrim;
 
@@ -49,15 +49,35 @@ public sealed class SkyrimGameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
-    public IModDisposeGetter OpenSource(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IModDisposeGetter OpenSource(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
-        return ModFactory.ImportGetter(path, Release, new BinaryReadParameters());
+        return SkyrimMod.Create(SkyrimRelease.SkyrimSE)
+            .FromPath(path)
+            .WithTargetLanguage(targetLanguage)
+            .Construct();
     }
 
     /// <inheritdoc />
-    public IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IMod OpenExistingOutput(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
-        return ModFactory.ImportSetter(path, Release, new BinaryReadParameters());
+        return SkyrimMod.Create(SkyrimRelease.SkyrimSE)
+            .FromPath(path)
+            .WithTargetLanguage(targetLanguage)
+            .Mutable()
+            .Construct();
+    }
+
+    /// <inheritdoc />
+    public IMod CloneOutput(IModGetter output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        return SkyrimModMixIn.DeepCopy((ISkyrimModGetter)output);
     }
 
     /// <inheritdoc />

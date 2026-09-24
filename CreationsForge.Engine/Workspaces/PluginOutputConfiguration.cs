@@ -1,4 +1,5 @@
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Engine.Workspaces;
 
@@ -21,12 +22,14 @@ public sealed class PluginOutputDefinition
     /// <param name="masterStyle">The requested plugin master style.</param>
     /// <param name="textStorageMode">The requested text storage mode.</param>
     /// <param name="createNew">Whether the workspace must create an empty output instead of opening an existing plugin.</param>
+    /// <param name="targetLanguage">The language Mutagen should load as the active translated-string value.</param>
     public PluginOutputDefinition(
         string path,
         ModKey modKey,
         MasterStyle masterStyle,
         PluginTextStorageMode textStorageMode,
-        bool createNew)
+        bool createNew,
+        Language targetLanguage = Language.English)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -35,6 +38,7 @@ public sealed class PluginOutputDefinition
         MasterStyle = masterStyle;
         TextStorageMode = textStorageMode;
         CreateNew = createNew;
+        TargetLanguage = targetLanguage;
     }
 
     /// <summary>Gets the output plugin path.</summary>
@@ -51,4 +55,7 @@ public sealed class PluginOutputDefinition
 
     /// <summary>Gets whether the workspace must create an empty output.</summary>
     public bool CreateNew { get; }
+
+    /// <summary>Gets the active translated-string language used for native reads and writes.</summary>
+    public Language TargetLanguage { get; }
 }
