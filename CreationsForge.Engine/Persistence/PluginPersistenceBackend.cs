@@ -9,8 +9,7 @@ namespace CreationsForge.Engine.Persistence;
 /// <summary>Uses Mutagen's native export and associated-file facilities with the operating-system filesystem.</summary>
 internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
 {
-    private const AssociatedModFileCategory PersistedCategories =
-        AssociatedModFileCategory.Plugin | AssociatedModFileCategory.RawStrings;
+    private static readonly string[] RawStringsExtensions = [".STRINGS", ".DLSTRINGS", ".ILSTRINGS"];
 
     /// <inheritdoc />
     public Task ExportAsync(
@@ -76,10 +75,29 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
     public IReadOnlyList<string> GetAssociatedFiles(ModKey modKey, string pluginPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginPath);
-        return PluginUtilityIO
-            .GetAssociatedFiles(new ModPath(modKey, pluginPath), PersistedCategories)
+        var fullPluginPath = Path.GetFullPath(pluginPath);
+        var files = PluginUtilityIO
+            .GetAssociatedFiles(
+                new ModPath(modKey, fullPluginPath),
+                AssociatedModFileCategory.Plugin)
             .Select(path => Path.GetFullPath(path.Path))
-            .ToArray();
+            .ToList();
+        var pluginDirectory = Path.GetDirectoryName(fullPluginPath)
+            ?? throw new InvalidOperationException($"Plugin path '{pluginPath}' does not have a parent directory.");
+        var stringsDirectory = Path.Combine(pluginDirectory, "Strings");
+        if (!Directory.Exists(stringsDirectory))
+        {
+            return files;
+        }
+
+        // Mutagen writes uppercase raw-string extensions, so discover them without a case-sensitive glob.
+        var fileNamePrefix = $"{modKey.Name}_";
+        files.AddRange(Directory
+            .EnumerateFiles(stringsDirectory)
+            .Where(path => Path.GetFileName(path).StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+            .Where(path => RawStringsExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .Select(Path.GetFullPath));
+        return files;
     }
 
     /// <inheritdoc />
