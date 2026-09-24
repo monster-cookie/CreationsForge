@@ -8,7 +8,6 @@ namespace CreationsForge.Engine.Records;
 /// <summary>Provides family-independent record create, exact override, read, compare, and atomic apply operations for one workspace.</summary>
 public sealed class RecordEditor
 {
-    private readonly object _mutationGate = new();
     private readonly PluginWorkspace _workspace;
     private readonly IReadOnlyDictionary<string, RecordFamily> _families;
 
@@ -36,11 +35,7 @@ public sealed class RecordEditor
     /// <returns>A transient projection of registered fields.</returns>
     public RecordSnapshot Read(RecordLocator locator)
     {
-        ArgumentNullException.ThrowIfNull(locator);
-        _workspace.ThrowIfDisposed();
-        var family = GetFamily(locator.FamilyId);
-        var record = ResolveExactRecord(family, locator.FormKey, locator.ContainingModKey);
-        return CreateSnapshot(family, record, locator.ContainingModKey);
+        return _workspace.ExecuteExclusive(() => ReadCore(locator));
     }
 
     /// <summary>Compares registered fields from two exact versions of the same declared family.</summary>
@@ -49,28 +44,31 @@ public sealed class RecordEditor
     /// <returns>Both transient snapshots and descriptor-ordered differences.</returns>
     public RecordComparison Compare(RecordLocator left, RecordLocator right)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
-        if (!string.Equals(left.FamilyId, right.FamilyId, StringComparison.Ordinal))
+        return _workspace.ExecuteExclusive(() =>
         {
-            throw new RecordEditingException($"Cannot compare declared families '{left.FamilyId}' and '{right.FamilyId}'.");
-        }
-
-        var leftSnapshot = Read(left);
-        var rightSnapshot = Read(right);
-        var family = GetFamily(left.FamilyId);
-        var differences = new List<RecordDifference>();
-        foreach (var field in family.Descriptor.Fields)
-        {
-            var leftValue = leftSnapshot.Values[field.Path];
-            var rightValue = rightSnapshot.Values[field.Path];
-            if (!RecordValueComparer.Equals(leftValue, rightValue))
+            ArgumentNullException.ThrowIfNull(left);
+            ArgumentNullException.ThrowIfNull(right);
+            if (!string.Equals(left.FamilyId, right.FamilyId, StringComparison.Ordinal))
             {
-                differences.Add(new RecordDifference(field.Path, leftValue, rightValue));
+                throw new RecordEditingException($"Cannot compare declared families '{left.FamilyId}' and '{right.FamilyId}'.");
             }
-        }
 
-        return new RecordComparison(leftSnapshot, rightSnapshot, differences);
+            var leftSnapshot = ReadCore(left);
+            var rightSnapshot = ReadCore(right);
+            var family = GetFamily(left.FamilyId);
+            var differences = new List<RecordDifference>();
+            foreach (var field in family.Descriptor.Fields)
+            {
+                var leftValue = leftSnapshot.Values[field.Path];
+                var rightValue = rightSnapshot.Values[field.Path];
+                if (!RecordValueComparer.Equals(leftValue, rightValue))
+                {
+                    differences.Add(new RecordDifference(field.Path, leftValue, rightValue));
+                }
+            }
+
+            return new RecordComparison(leftSnapshot, rightSnapshot, differences);
+        });
     }
 
     /// <summary>Validates and atomically publishes one record change set with exactly one workspace revision increment.</summary>
@@ -79,62 +77,78 @@ public sealed class RecordEditor
     /// <exception cref="RecordEditingException">Thrown when validation, context resolution, Mutagen mutation, publication, or rollback fails.</exception>
     public RecordApplyResult Apply(RecordChangeSet changeSet)
     {
+        return _workspace.ExecuteExclusive(() => ApplyCore(changeSet));
+    }
+
+    private RecordApplyResult ApplyCore(RecordChangeSet changeSet)
+    {
         ArgumentNullException.ThrowIfNull(changeSet);
-        lock (_mutationGate)
+        _workspace.ThrowIfDisposed();
+        if (_workspace.State.RequiresReopen)
         {
-            _workspace.ThrowIfDisposed();
-            if (_workspace.State.Revision != changeSet.ExpectedRevision)
-            {
-                throw new RecordEditingException($"Workspace revision is '{_workspace.State.Revision}', not expected '{changeSet.ExpectedRevision}'. Refresh before applying changes.");
-            }
-
-            if (_workspace.State.Revision == ulong.MaxValue)
-            {
-                throw new RecordEditingException("The workspace revision cannot be incremented beyond UInt64.MaxValue.");
-            }
-
-            var resolved = changeSet.Mutations
-                .Select(mutation => (Mutation: mutation, Family: GetFamily(mutation.FamilyId)))
-                .ToArray();
-            foreach (var item in resolved)
-            {
-                item.Family.ValidateChanges(item.Mutation.Changes);
-            }
-            ValidateReferences(resolved);
-
-            var initialNextFormId = _workspace.MutableOutput.NextFormID;
-            PreparedMutation[] prepared;
-            RecordSnapshot[] snapshots;
-            try
-            {
-                prepared = resolved.Select(Prepare).ToArray();
-                var duplicateIdentity = prepared
-                    .GroupBy(item => item.Candidate.FormKey)
-                    .FirstOrDefault(group => group.Count() > 1);
-                if (duplicateIdentity is not null)
-                {
-                    throw new RecordEditingException($"Change set targets record identity '{duplicateIdentity.Key}' more than once.");
-                }
-
-                foreach (var item in prepared)
-                {
-                    item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
-                }
-
-                snapshots = prepared
-                    .Select(item => CreateSnapshot(item.Family, item.Candidate, _workspace.Output.ModKey))
-                    .ToArray();
-            }
-            catch
-            {
-                _workspace.MutableOutput.NextFormID = initialNextFormId;
-                throw;
-            }
-
-            PublishWithRollback(prepared, initialNextFormId);
-            _workspace.MarkOutputChanged();
-            return new RecordApplyResult(_workspace.State.Revision, snapshots);
+            throw new RecordEditingException("The workspace requires a fresh reopen before applying more changes.");
         }
+
+        if (_workspace.State.Revision != changeSet.ExpectedRevision)
+        {
+            throw new RecordEditingException($"Workspace revision is '{_workspace.State.Revision}', not expected '{changeSet.ExpectedRevision}'. Refresh before applying changes.");
+        }
+
+        if (_workspace.State.Revision == ulong.MaxValue)
+        {
+            throw new RecordEditingException("The workspace revision cannot be incremented beyond UInt64.MaxValue.");
+        }
+
+        var resolved = changeSet.Mutations
+            .Select(mutation => (Mutation: mutation, Family: GetFamily(mutation.FamilyId)))
+            .ToArray();
+        foreach (var item in resolved)
+        {
+            item.Family.ValidateChanges(item.Mutation.Changes);
+        }
+        ValidateReferences(resolved);
+
+        var initialNextFormId = _workspace.MutableOutput.NextFormID;
+        PreparedMutation[] prepared;
+        RecordSnapshot[] snapshots;
+        try
+        {
+            prepared = resolved.Select(Prepare).ToArray();
+            var duplicateIdentity = prepared
+                .GroupBy(item => item.Candidate.FormKey)
+                .FirstOrDefault(group => group.Count() > 1);
+            if (duplicateIdentity is not null)
+            {
+                throw new RecordEditingException($"Change set targets record identity '{duplicateIdentity.Key}' more than once.");
+            }
+
+            foreach (var item in prepared)
+            {
+                item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
+            }
+
+            snapshots = prepared
+                .Select(item => CreateSnapshot(item.Family, item.Candidate, _workspace.Output.ModKey))
+                .ToArray();
+        }
+        catch
+        {
+            _workspace.MutableOutput.NextFormID = initialNextFormId;
+            throw;
+        }
+
+        PublishWithRollback(prepared, initialNextFormId);
+        _workspace.MarkOutputChanged(snapshots);
+        return new RecordApplyResult(_workspace.State.Revision, snapshots);
+    }
+
+    private RecordSnapshot ReadCore(RecordLocator locator)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+        _workspace.ThrowIfDisposed();
+        var family = GetFamily(locator.FamilyId);
+        var record = ResolveExactRecord(family, locator.FormKey, locator.ContainingModKey);
+        return CreateSnapshot(family, record, locator.ContainingModKey);
     }
 
     private PreparedMutation Prepare((RecordMutation Mutation, RecordFamily Family) item)
@@ -235,7 +249,7 @@ public sealed class RecordEditor
 
         try
         {
-            var resolution = _workspace.ResolveRecord(formKey, family.GetterType, containingModKey);
+            var resolution = _workspace.ResolveRecordCore(formKey, family.GetterType, containingModKey);
             return resolution.ExactContext.Record as IMajorRecordGetter
                 ?? throw new RecordEditingException($"Resolved context '{containingModKey}:{formKey}' is not a Mutagen major record.");
         }

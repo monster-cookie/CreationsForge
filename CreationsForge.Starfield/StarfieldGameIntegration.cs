@@ -62,6 +62,13 @@ public sealed class StarfieldGameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
+    public IMod CloneOutput(IModGetter output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        return StarfieldModMixIn.DeepCopy((IStarfieldModGetter)output);
+    }
+
+    /// <inheritdoc />
     public ILinkCache CreateLinkCache(IReadOnlyList<IModGetter> sources, IMod output)
     {
         return sources

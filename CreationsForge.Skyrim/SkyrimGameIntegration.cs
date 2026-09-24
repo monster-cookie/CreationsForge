@@ -61,6 +61,13 @@ public sealed class SkyrimGameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
+    public IMod CloneOutput(IModGetter output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        return SkyrimModMixIn.DeepCopy((ISkyrimModGetter)output);
+    }
+
+    /// <inheritdoc />
     public ILinkCache CreateLinkCache(IReadOnlyList<IModGetter> sources, IMod output)
     {
         return sources

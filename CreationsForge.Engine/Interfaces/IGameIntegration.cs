@@ -45,6 +45,11 @@ public interface IGameIntegration
     /// <returns>The complete mutable output.</returns>
     IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters);
 
+    /// <summary>Creates a complete mutable clone of an output through the game's generated Mutagen translation.</summary>
+    /// <param name="output">The output to clone.</param>
+    /// <returns>An independently owned mutable output.</returns>
+    IMod CloneOutput(IModGetter output);
+
     /// <summary>Creates the game's typed mutable link cache over immutable sources and one mutable output.</summary>
     /// <param name="sources">Immutable source plugins in low-to-high priority order.</param>
     /// <param name="output">The mutable Mutagen plugin output.</param>

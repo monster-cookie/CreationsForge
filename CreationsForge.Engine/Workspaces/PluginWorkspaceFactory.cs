@@ -1,4 +1,5 @@
 using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Persistence;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Binary.Headers;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -11,12 +12,22 @@ public sealed class PluginWorkspaceFactory
 {
     private const string OutputLockSuffix = ".creationsforge.lock";
     private readonly IReadOnlyDictionary<Mutagen.Bethesda.GameRelease, IGameIntegration> _integrations;
+    private readonly IPluginPersistenceBackend _persistenceBackend;
 
     /// <summary>Initializes a workspace factory with one integration per supported release.</summary>
     /// <param name="integrations">The admitted game integrations.</param>
     public PluginWorkspaceFactory(IEnumerable<IGameIntegration> integrations)
+        : this(integrations, new PluginPersistenceBackend())
+    {
+    }
+
+    /// <summary>Initializes a workspace factory with an injectable persistence boundary.</summary>
+    internal PluginWorkspaceFactory(
+        IEnumerable<IGameIntegration> integrations,
+        IPluginPersistenceBackend persistenceBackend)
     {
         ArgumentNullException.ThrowIfNull(integrations);
+        ArgumentNullException.ThrowIfNull(persistenceBackend);
         try
         {
             _integrations = integrations.ToDictionary(integration => integration.Release);
@@ -25,6 +36,8 @@ public sealed class PluginWorkspaceFactory
         {
             throw new ArgumentException("Only one game integration may be registered for each release.", nameof(integrations), exception);
         }
+
+        _persistenceBackend = persistenceBackend;
     }
 
     /// <summary>Opens one complete plugin workspace and acquires ownership until it is disposed.</summary>
@@ -60,17 +73,22 @@ public sealed class PluginWorkspaceFactory
             .Select(plugin => new WorkspaceFileLockRequest(plugin.Path, $"source plugin '{plugin.ModKey}'", isShared: true, createIfMissing: false))
             .ToList();
         lockRequests.Add(new WorkspaceFileLockRequest(outputPath + OutputLockSuffix, $"output identity '{request.Output.ModKey}'", isShared: false, createIfMissing: true));
-        var outputStampBeforeOpen = request.Output.CreateNew ? null : FileStamp.Capture(outputPath);
+        var outputStampBeforeOpen = request.Output.CreateNew
+            ? null
+            : _persistenceBackend.CaptureStamp(request.Output.ModKey, outputPath);
 
         WorkspaceFileLockSet? fileLocks = null;
         var openedSources = new List<IModDisposeGetter>(sourceClosure.Count);
         IMod? output = null;
+        IMod? savedBaseline = null;
         ILinkCache? linkCache = null;
         try
         {
             fileLocks = WorkspaceFileLockSet.Acquire(lockRequests);
             if (!request.Output.CreateNew)
             {
+                // Probe direct-file exclusivity while opening, but retain only the sidecar identity lock.
+                // A lifetime destination handle would prevent replace-style publication on Windows.
                 using var outputProbe = WorkspaceFileLockSet.Acquire(
                 [
                     new WorkspaceFileLockRequest(
@@ -96,21 +114,14 @@ public sealed class PluginWorkspaceFactory
                     openedSources.Cast<IModMasterStyledGetter>().ToArray());
             if (!request.Output.CreateNew)
             {
-                fileLocks.AcquireAdditional(
-                [
-                    new WorkspaceFileLockRequest(
-                        outputPath,
-                        $"output plugin '{request.Output.ModKey}'",
-                        isShared: false,
-                        createIfMissing: false),
-                ]);
-                if (outputStampBeforeOpen != FileStamp.Capture(outputPath))
+                if (!Equals(outputStampBeforeOpen, _persistenceBackend.CaptureStamp(request.Output.ModKey, outputPath)))
                 {
                     throw new PluginWorkspaceException($"Output plugin '{request.Output.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
                 }
             }
 
             ValidateOpenedOutput(output, request.Output, outputInspection);
+            savedBaseline = integration.CloneOutput(output);
             linkCache = integration.CreateLinkCache(openedSources, output);
 
             var state = new PluginWorkspaceState(
@@ -122,9 +133,20 @@ public sealed class PluginWorkspaceFactory
                 request.Output.CreateNew,
                 isDirty: request.Output.CreateNew,
                 revision: 0);
-            var workspace = new PluginWorkspace(integration, openedSources, output, linkCache, fileLocks, state);
+            var workspace = new PluginWorkspace(
+                integration,
+                openedSources,
+                output,
+                savedBaseline,
+                linkCache,
+                fileLocks,
+                state,
+                dataDirectory,
+                outputStampBeforeOpen,
+                _persistenceBackend);
             openedSources = [];
             output = null;
+            savedBaseline = null;
             linkCache = null;
             fileLocks = null;
             return workspace;
@@ -143,6 +165,7 @@ public sealed class PluginWorkspaceFactory
         {
             TryDisposeAfterFailedOpen(linkCache as IDisposable);
             TryDisposeAfterFailedOpen(output as IDisposable);
+            TryDisposeAfterFailedOpen(savedBaseline as IDisposable);
 
             for (var index = openedSources.Count - 1; index >= 0; index--)
             {
@@ -414,53 +437,6 @@ public sealed class PluginWorkspaceFactory
     {
         Visiting,
         Visited,
-    }
-
-    private sealed class FileStamp : IEquatable<FileStamp>
-    {
-        private FileStamp(long length, DateTime lastWriteTimeUtc)
-        {
-            Length = length;
-            LastWriteTimeUtc = lastWriteTimeUtc;
-        }
-
-        public long Length { get; }
-
-        public DateTime LastWriteTimeUtc { get; }
-
-        public static FileStamp Capture(string path)
-        {
-            var file = new FileInfo(path);
-            file.Refresh();
-            return new FileStamp(file.Length, file.LastWriteTimeUtc);
-        }
-
-        public bool Equals(FileStamp? other)
-        {
-            return other is not null
-                && Length == other.Length
-                && LastWriteTimeUtc == other.LastWriteTimeUtc;
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return Equals(obj as FileStamp);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Length, LastWriteTimeUtc);
-        }
-
-        public static bool operator ==(FileStamp? left, FileStamp? right)
-        {
-            return EqualityComparer<FileStamp>.Default.Equals(left, right);
-        }
-
-        public static bool operator !=(FileStamp? left, FileStamp? right)
-        {
-            return !(left == right);
-        }
     }
 
     private sealed class DiscoveredPlugin

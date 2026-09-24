@@ -61,6 +61,13 @@ public sealed class Fallout4GameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
+    public IMod CloneOutput(IModGetter output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        return Fallout4ModMixIn.DeepCopy((IFallout4ModGetter)output);
+    }
+
+    /// <inheritdoc />
     public ILinkCache CreateLinkCache(IReadOnlyList<IModGetter> sources, IMod output)
     {
         return sources
