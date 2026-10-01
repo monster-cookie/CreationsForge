@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
+using Serilog;
 
 namespace CreationsForge.Workbench;
 
@@ -115,6 +116,25 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <summary>Gets copyable diagnostics for the latest connection, workspace, or output result.</summary>
     public string Diagnostics { get => _diagnostics; private set => Set(ref _diagnostics, value); }
 
+    /// <summary>Gets the active log file path, or the reason file logging could not start.</summary>
+    public string LogFilePath
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(WorkbenchLog.CurrentLogPath))
+            {
+                return "Log file: " + WorkbenchLog.CurrentLogPath;
+            }
+
+            return string.IsNullOrWhiteSpace(WorkbenchLog.StartupError)
+                ? string.Empty
+                : "Logging failed to start: " + WorkbenchLog.StartupError;
+        }
+    }
+
+    /// <summary>Gets whether <see cref="LogFilePath"/> should be shown above the diagnostics box.</summary>
+    public bool HasLogFile => LogFilePath.Length > 0;
+
     /// <summary>Gets whether Connect can start a new child process.</summary>
     public bool CanConnect => _client is null && !_connecting && !_closing;
 
@@ -191,6 +211,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         IWorkbenchMcpSession? session = null;
         try
         {
+            Log.ForContext<WorkbenchViewModel>().Information("Connecting to MCP executable {ExecutablePath}.", McpExecutablePath);
             session = await _startSession(McpExecutablePath, timeout.Token).ConfigureAwait(false);
             var discard = false;
             lock (_state)
@@ -217,6 +238,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             }
 
             var version = session.ServerVersion;
+            Log.ForContext<WorkbenchViewModel>().Information("Connected to MCP server version {ServerVersion}.", version);
             Publish(() =>
             {
                 Status = $"Connected to CreationsForge MCP {version}.";
@@ -225,6 +247,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
+            Log.ForContext<WorkbenchViewModel>().Information("Connection to {ExecutablePath} was canceled.", McpExecutablePath);
             await DisposeIfUnownedAsync(session).ConfigureAwait(false);
             Publish(() =>
             {
@@ -234,6 +257,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
         catch (Exception exception)
         {
+            Log.ForContext<WorkbenchViewModel>().Warning(exception, "Connection to {ExecutablePath} failed.", McpExecutablePath);
             await DisposeIfUnownedAsync(session).ConfigureAwait(false);
             Publish(() =>
             {
@@ -310,6 +334,11 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     {
         try
         {
+            Log.ForContext<WorkbenchViewModel>().Information(
+                "Opening workspace for {Release} in {DataDirectory} with plugins {SelectedPlugins}.",
+                Release,
+                DataDirectory,
+                SelectedPlugins);
             ValidateDirectory(DataDirectory, "data directory");
             var plugins = SelectedPlugins
                 .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
@@ -338,6 +367,17 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 }
             }
 
+            if (!store)
+            {
+                Log.ForContext<WorkbenchViewModel>().Warning(
+                    "Workspace open returned no session identifier. Result: {Result}",
+                    Truncate(result.ToJsonString(IndentedJson)));
+            }
+            else
+            {
+                Log.ForContext<WorkbenchViewModel>().Information("Workspace session {WorkspaceId} is ready.", workspaceId);
+            }
+
             Publish(() =>
             {
                 if (!store)
@@ -355,10 +395,12 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
+            Log.ForContext<WorkbenchViewModel>().Information("Workspace open was canceled.");
             Publish(() => Diagnostics = "Workspace open canceled.");
         }
         catch (Exception exception)
         {
+            Log.ForContext<WorkbenchViewModel>().Warning(exception, "Workspace open failed for {DataDirectory}.", DataDirectory);
             Publish(() => Diagnostics = FormatError("Workspace open failed", exception));
         }
     }
@@ -373,13 +415,22 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 workspaceId = _workspaceId;
             }
 
+            var tool = createNew ? "output_create" : "output_open";
             if (workspaceId is null || _closing)
             {
+                Log.ForContext<WorkbenchViewModel>().Warning("Skipped {Tool} because no workspace is open.", tool);
                 return;
             }
 
             ValidateFilePath(OutputPath, "output path");
-            var tool = createNew ? "output_create" : "output_open";
+            Log.ForContext<WorkbenchViewModel>().Information(
+                "Calling {Tool} for workspace {WorkspaceId} at {OutputPath} with master style {MasterStyle}, text storage {TextStorageMode}, and language {Language}.",
+                tool,
+                workspaceId,
+                OutputPath,
+                MasterStyle,
+                TextStorageMode,
+                Language);
             var result = await CallAsync(tool, new JsonObject
             {
                 ["operationId"] = "workbench-output-" + Guid.NewGuid().ToString("N"),
@@ -389,6 +440,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 ["textStorageMode"] = TextStorageMode,
                 ["language"] = Language,
             }, cancellationToken).ConfigureAwait(false);
+            Log.ForContext<WorkbenchViewModel>().Information("{Tool} completed for {OutputPath}.", tool, OutputPath);
             Publish(() =>
             {
                 Status = createNew ? "New output attached to the workspace." : "Existing output attached to the workspace.";
@@ -397,10 +449,12 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
+            Log.ForContext<WorkbenchViewModel>().Information("Output operation was canceled for {OutputPath}.", OutputPath);
             Publish(() => Diagnostics = "Output operation canceled.");
         }
         catch (Exception exception)
         {
+            Log.ForContext<WorkbenchViewModel>().Warning(exception, "Output operation failed for {OutputPath}.", OutputPath);
             Publish(() => Diagnostics = FormatError("Output operation failed", exception));
         }
     }
@@ -452,6 +506,10 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 }
                 catch (Exception exception)
                 {
+                    Log.ForContext<WorkbenchViewModel>().Warning(
+                        exception,
+                        "Workspace close failed for {WorkspaceId}. The child process will still be stopped.",
+                        workspaceId);
                     Publish(() => Diagnostics = FormatError("Workspace close failed; the child process will still be stopped", exception));
                 }
             }
@@ -473,6 +531,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 _closeTask = null;
             }
 
+            Log.ForContext<WorkbenchViewModel>().Information("Workbench session closed.");
             Publish(() =>
             {
                 Status = "Disconnected";
@@ -537,6 +596,15 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     }
 
     private static string FormatError(string phase, Exception exception) => $"{phase}: {exception.Message}";
+
+    /// <summary>Limits a tool result copied into the log so a large payload does not fill the file.</summary>
+    /// <param name="value">The serialized tool result.</param>
+    /// <returns>At most the first 4000 characters of <paramref name="value"/>.</returns>
+    private static string Truncate(string value)
+    {
+        const int limit = 4000;
+        return value.Length <= limit ? value : value[..limit];
+    }
 
     private static string? ReadString(JsonNode? node)
     {

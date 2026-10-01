@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Serilog;
 
 namespace CreationsForge.Workbench;
 
@@ -8,7 +10,8 @@ namespace CreationsForge.Workbench;
 internal sealed class StdioMcpClient : IWorkbenchMcpSession
 {
     private readonly Process _process;
-    private readonly Task<string> _standardError;
+    private readonly StringBuilder _standardError = new();
+    private readonly Task _standardErrorPump;
     private readonly SemaphoreSlim _transaction = new(1, 1);
     private int _nextId;
     private bool _disposed;
@@ -16,7 +19,7 @@ internal sealed class StdioMcpClient : IWorkbenchMcpSession
     private StdioMcpClient(Process process)
     {
         _process = process;
-        _standardError = process.StandardError.ReadToEndAsync();
+        _standardErrorPump = PumpStandardErrorAsync();
     }
 
     /// <summary>Gets the process id of the most recently started child, including one that failed initialize.</summary>
@@ -61,6 +64,11 @@ internal sealed class StdioMcpClient : IWorkbenchMcpSession
         }
 
         var process = new Process { StartInfo = startInfo };
+        Log.ForContext<StdioMcpClient>().Information(
+            "Starting MCP child {FileName} {Arguments} from {WorkingDirectory}.",
+            startInfo.FileName,
+            string.Join(' ', startInfo.ArgumentList),
+            startInfo.WorkingDirectory);
         try
         {
             if (!process.Start())
@@ -75,6 +83,7 @@ internal sealed class StdioMcpClient : IWorkbenchMcpSession
         }
 
         LastProcessId = process.Id;
+        Log.ForContext<StdioMcpClient>().Information("MCP child started with process id {ProcessId}.", process.Id);
         var client = new StdioMcpClient(process);
         try
         {
@@ -154,8 +163,77 @@ internal sealed class StdioMcpClient : IWorkbenchMcpSession
         }
         finally
         {
+            try
+            {
+                await _standardErrorPump.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                Log.ForContext<StdioMcpClient>().Warning(exception, "MCP stderr was not fully read before the child was released.");
+            }
+
+            if (_process.HasExited)
+            {
+                Log.ForContext<StdioMcpClient>().Information(
+                    "MCP child {ProcessId} exited with code {ExitCode}.",
+                    _process.Id,
+                    _process.ExitCode);
+            }
+
             _process.Dispose();
             _transaction.Dispose();
+        }
+    }
+
+    /// <summary>Copies MCP host stderr into the Workbench log as each line arrives.</summary>
+    /// <returns>A task that completes when stderr closes or the read fails.</returns>
+    private async Task PumpStandardErrorAsync()
+    {
+        try
+        {
+            while (true)
+            {
+                var line = await _process.StandardError.ReadLineAsync().ConfigureAwait(false);
+                if (line is null)
+                {
+                    return;
+                }
+
+                if (line.Length == 0)
+                {
+                    continue;
+                }
+
+                lock (_standardError)
+                {
+                    if (_standardError.Length > 0)
+                    {
+                        _standardError.AppendLine();
+                    }
+
+                    var remaining = 8192 - _standardError.Length;
+                    if (remaining > 0)
+                    {
+                        _standardError.Append(line.Length <= remaining ? line : line[..remaining]);
+                    }
+                }
+
+                Log.ForContext<StdioMcpClient>().Information("MCP host: {StandardErrorLine}", line);
+            }
+        }
+        catch (Exception exception)
+        {
+            Log.ForContext<StdioMcpClient>().Warning(exception, "Stopped reading stderr for MCP process {ProcessId}.", _process.Id);
+        }
+    }
+
+    /// <summary>Returns the retained tail of MCP stderr for an exception message.</summary>
+    /// <returns>At most the first 8192 characters written to stderr.</returns>
+    private string StandardErrorSnapshot()
+    {
+        lock (_standardError)
+        {
+            return _standardError.ToString();
         }
     }
 
@@ -257,7 +335,24 @@ internal sealed class StdioMcpClient : IWorkbenchMcpSession
             var line = await _process.StandardOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
-                var diagnostics = _process.HasExited ? await _standardError.ConfigureAwait(false) : string.Empty;
+                if (_process.HasExited)
+                {
+                    try
+                    {
+                        await _standardErrorPump.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.ForContext<StdioMcpClient>().Warning(exception, "MCP stderr was not fully read after stdout closed.");
+                    }
+                }
+
+                var diagnostics = StandardErrorSnapshot();
+                Log.ForContext<StdioMcpClient>().Error(
+                    "MCP process {ProcessId} closed stdout before response {RequestId}. {StandardError}",
+                    _process.Id,
+                    id,
+                    diagnostics);
                 throw new InvalidOperationException($"The MCP process closed stdout before response {id}. {diagnostics}");
             }
 

@@ -13,6 +13,9 @@
     <PackageVersion Include="Mutagen.Bethesda.Fallout4" Version="0.55.0-alpha.54" />
     <PackageVersion Include="Mutagen.Bethesda.Skyrim" Version="0.55.0-alpha.54" />
     <PackageVersion Include="Mutagen.Bethesda.Starfield" Version="0.55.0-alpha.54" />
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>
 </Project>

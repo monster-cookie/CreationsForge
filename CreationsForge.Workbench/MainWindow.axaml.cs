@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Serilog;
 
 namespace CreationsForge.Workbench;
 
@@ -39,9 +40,9 @@ public sealed partial class MainWindow : Window
         {
             await _windowClose.ConfigureAwait(true);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            // Closing still has to finish. The view model records cleanup failures in diagnostics.
+            Log.Error(exception, "Workbench window close failed. The window will still close.");
         }
 
         if (!ownsClose)

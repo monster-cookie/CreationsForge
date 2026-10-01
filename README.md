@@ -63,9 +63,11 @@ This starts a protocol server, not an interactive shell. Protocol messages use s
 
 ## MCP Workbench
 
-The standalone Workbench provides a human-launchable desktop shell around the production MCP executable. It keeps the executable, game release, source data directory, selected plugins, output path, master style, text storage, and language explicit; connection and workspace failures remain visible in the diagnostics panel. Build it with the solution and launch `CreationsForge.Workbench\bin\Release\net10.0\CreationsForge.exe`, then select the MCP executable before connecting. A missing executable or failed startup leaves the shell disconnected and usable. Disconnect and window close cancel the active call and stop the Workbench-owned child process.
+The standalone Workbench provides a human-launchable desktop shell around the production MCP executable. It keeps the executable, game release, source data directory, selected plugins, output path, master style, text storage, and language explicit; connection and workspace failures remain visible in the diagnostics panel. Build it with the solution and launch `CreationsForge.Workbench\bin\Release\net10.0\CreationsForgeWorkbench.exe`, then select the MCP executable before connecting. The final Creations Forge GUI keeps the executable name `CreationsForge.exe` and will later add a setting and button that launches this Workbench. That entry is not part of the standalone shell. A missing executable or failed startup leaves the shell disconnected and usable. Disconnect and window close cancel the active call and stop the Workbench-owned child process.
 
 The initial shell supports MCP initialization, workspace open, new output, existing output, disconnect, and responsive close. It deliberately does not duplicate engine or record state; subsequent authoring controls will call the discovered production MCP tools through the same child process.
+
+The Workbench writes a Serilog file and shows its path above the diagnostics box. On Windows the preferred directory is `%ProgramData%\CreationsForge\Logs`. Other systems use `~/.CreationsForge/Logs`. Each launch creates `CreationsForgeWorkbench-*.log` and records connection, workspace, output, and MCP host stderr there. If that directory cannot be created, the file falls forward to the user or temporary logs directory.
 
 ## Social Presence
 
