@@ -127,6 +127,83 @@ public sealed class PluginWorkspace : IDisposable
         });
     }
 
+    /// <summary>Projects pending registered changes and the workspace state captured with them.</summary>
+    /// <returns>An immutable preview. It is not a save receipt and does not write files.</returns>
+    public PluginWorkspacePreview Preview()
+    {
+        return ExecuteExclusive(() =>
+        {
+            ThrowIfDisposed();
+            return new PluginWorkspacePreview(_state, _pendingSaveSnapshots.Values.ToArray());
+        });
+    }
+
+    /// <summary>Searches winning records without retaining the unmatched catalog.</summary>
+    /// <param name="familyId">The declared family identifier.</param>
+    /// <param name="editorId">An optional case-insensitive EditorID substring. Null or whitespace matches every winning record.</param>
+    /// <param name="skip">The number of matches to skip.</param>
+    /// <param name="take">The maximum number of summaries to retain, from 1 through <see cref="PluginRecordSearchPage.MaximumTake"/>.</param>
+    /// <returns>One revision-bound page of winning summaries.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="familyId"/> is not editable in this workspace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the page bounds are outside the supported range.</exception>
+    public PluginRecordSearchPage SearchWinningRecords(string familyId, string? editorId, int skip, int take)
+    {
+        return ExecuteExclusive(() =>
+        {
+            ThrowIfDisposed();
+            ArgumentException.ThrowIfNullOrWhiteSpace(familyId);
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(take, PluginRecordSearchPage.MaximumTake);
+            var descriptor = Records.Families.FirstOrDefault(family =>
+                string.Equals(family.FamilyId, familyId, StringComparison.Ordinal));
+            if (descriptor is null)
+            {
+                throw new ArgumentException($"Family '{familyId}' is not editable in this workspace.", nameof(familyId));
+            }
+
+            var filter = string.IsNullOrWhiteSpace(editorId) ? null : editorId;
+            var matches = new List<PluginRecordSummary>(take);
+            var skipped = 0;
+            var hasMore = false;
+            foreach (var context in _integration.EnumerateWinningContexts(LinkCache, descriptor.GetterType))
+            {
+                if (context.Record is not IMajorRecordGetter record)
+                {
+                    continue;
+                }
+
+                if (filter is not null
+                    && (record.EditorID is null
+                        || record.EditorID.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0))
+                {
+                    continue;
+                }
+
+                if (skipped < skip)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (matches.Count == take)
+                {
+                    hasMore = true;
+                    break;
+                }
+
+                matches.Add(new PluginRecordSummary(
+                    familyId,
+                    record.FormKey,
+                    context.ModKey,
+                    context.ModKey,
+                    record.EditorID));
+            }
+
+            return new PluginRecordSearchPage(_state.Revision, skip, take, hasMore, matches);
+        });
+    }
+
     /// <summary>Exports, verifies, publishes, and reopens the complete native output file set.</summary>
     /// <param name="progress">Optional UI-neutral lifecycle diagnostics whose report calls are serialized outside the workspace operation gate and completed before this method returns.</param>
     /// <param name="cancellationToken">Cancellation honored before destination publication begins.</param>

@@ -1,6 +1,9 @@
 using CreationsForge.Engine.Interfaces;
 using CreationsForge.Engine.Workspaces;
 using CreationsForge.Fallout4;
+using CreationsForge.Mcp.Protocol;
+using CreationsForge.Mcp.Sessions;
+using CreationsForge.Mcp.Tools;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,8 +44,14 @@ public static class McpHostComposition
             builder.Services.AddSingleton<IGameIntegration>(integration);
         }
 
-        builder.Services.AddSingleton(serviceProvider =>
-            new PluginWorkspaceFactory(serviceProvider.GetServices<IGameIntegration>()));
+        var factory = new PluginWorkspaceFactory(integrations);
+        var sessions = new McpSessionRegistry();
+        var replay = new McpOperationReplay();
+        var authoring = new McpAuthoringService(integrations, factory, sessions, replay);
+        builder.Services.AddSingleton(factory);
+        builder.Services.AddSingleton(sessions);
+        builder.Services.AddSingleton(replay);
+        builder.Services.AddSingleton(authoring);
 
         builder.Services
             .AddMcpServer(options =>
@@ -52,9 +61,12 @@ public static class McpHostComposition
                     Name = "CreationsForge",
                     Version = serverVersion,
                 };
-                options.ServerInstructions = "CreationsForge provides its Mutagen-backed plugin workspace. Authoring and save MCP tools are not available yet.";
+                options.ServerInstructions =
+                    "CreationsForge exposes a generic Mutagen plugin authoring contract. "
+                    + "Mutating tools require operationId and replay that identifier for the life of this process.";
             })
-            .WithStdioServerTransport();
+            .WithStdioServerTransport()
+            .WithTools(new McpAuthoringTools(authoring), McpToolResults.JsonOptions);
 
         return builder;
     }

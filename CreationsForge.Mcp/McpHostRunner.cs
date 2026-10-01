@@ -50,7 +50,7 @@ public static class McpHostRunner
 
     /// <summary>Reads a stable non-empty version for MCP initialization metadata.</summary>
     /// <returns>The informational version, assembly version, or a deterministic fallback.</returns>
-    private static string GetServerVersion()
+    internal static string GetServerVersion()
     {
         var assembly = typeof(McpHostRunner).Assembly;
         return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
