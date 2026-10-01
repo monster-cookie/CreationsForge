@@ -108,7 +108,7 @@ jobs:
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/mcp -Force | Out-Null
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj `
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj `
                     --configuration Release `
                     --runtime win-x64 `
                     --self-contained true `
@@ -278,7 +278,7 @@ jobs:
                   mkdir -p ./artifacts/publish/linux/desktop
                   mkdir -p ./artifacts/publish/linux/mcp
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
@@ -458,7 +458,7 @@ jobs:
                   mkdir -p ./artifacts/publish/arch/desktop
                   mkdir -p ./artifacts/publish/arch/mcp
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
@@ -623,7 +623,7 @@ jobs:
                   mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
                   mkdir -p "$desktop_publish_root" "$mcp_publish_root"
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime "$PACKAGE_RID" \
                     --self-contained true \

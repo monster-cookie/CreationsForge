@@ -61,6 +61,12 @@ dotnet .\CreationsForge.Mcp\bin\Release\net10.0\CreationsForge.Mcp.dll
 
 This starts a protocol server, not an interactive shell. Protocol messages use standard input and output; diagnostics use standard error. The executable rejects command-line arguments with exit code 2.
 
+## MCP Workbench
+
+The standalone Workbench provides a human-launchable desktop shell around the production MCP executable. It keeps the executable, game release, source data directory, selected plugins, and output path explicit; connection and workspace failures remain visible in the diagnostics panel. Build it with the solution and launch `CreationsForge.Workbench\bin\Release\net10.0\CreationsForge.exe`, then select the MCP executable before connecting.
+
+The initial shell supports MCP initialization, workspace open, new output, existing output, disconnect, and responsive close. It deliberately does not duplicate engine or record state; subsequent authoring controls will call the discovered production MCP tools through the same child process.
+
 ## Social Presence
 
 1. I can be found as Venpi hanging out in the Quarter Onion Games Discord server.
