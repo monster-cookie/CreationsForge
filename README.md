@@ -51,7 +51,7 @@ Before opening a pull request, review the complete diff, confirm that no generat
 
 ## MCP Development Host
 
-Configure a stdio-capable MCP client to launch the dedicated MCP executable without command-line arguments. During the rebuild, the available MCP tools depend on the capabilities implemented in the selected development build.
+Configure a stdio-capable MCP client to launch the dedicated MCP executable without command-line arguments. The production host exposes `server_info`, `record_types`, `record_schema`, `workspace_open`, `workspace_state`, `workspace_close`, `records_search`, `record_read`, `record_compare`, `output_create`, `output_open`, `record_create`, `record_override`, `record_apply`, `workspace_preview`, `workspace_save`, and `workspace_discard`. Mutating tools require an `operationId` of at most 128 characters. An identical operation id and payload is replayed for the life of the process and is not persisted across a restart. Reusing an operation id with a different payload returns `replay_conflict`. An evicted operation id returns `replay_expired` and is not executed again. A new operation id is refused with `replay_capacity` when the replay cache cannot record it, and that refusal is not executed.
 
 From the repository root after a Release build:
 

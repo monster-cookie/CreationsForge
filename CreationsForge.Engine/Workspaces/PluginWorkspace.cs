@@ -89,6 +89,18 @@ public sealed class PluginWorkspace : IDisposable
         ObjectDisposedException.ThrowIf(_disposed || Volatile.Read(ref _closeRequested) != 0, this);
     }
 
+    /// <summary>Throws when a cursor names a workspace revision that is no longer current.</summary>
+    /// <param name="expectedRevision">The revision named by the cursor.</param>
+    /// <exception cref="PluginWorkspaceException">Thrown when the live revision differs.</exception>
+    internal void ThrowIfCursorRevision(ulong expectedRevision)
+    {
+        if (_state.Revision != expectedRevision)
+        {
+            throw new PluginWorkspaceException(
+                $"Workspace revision is '{_state.Revision}', not cursor revision '{expectedRevision}'.");
+        }
+    }
+
     /// <summary>Gets the Mutagen link cache whose immutable base is <see cref="Sources"/> and whose mutable layer is <see cref="Output"/>.</summary>
     public ILinkCache LinkCache => _linkCache;
 
@@ -124,6 +136,101 @@ public sealed class PluginWorkspace : IDisposable
             return _integration
                 .EnumerateWinningContexts(LinkCache, recordType)
                 .ToArray();
+        });
+    }
+
+    /// <summary>Projects pending registered changes and the workspace state captured with them.</summary>
+    /// <returns>An immutable preview. It is not a save receipt and does not write files.</returns>
+    public PluginWorkspacePreview Preview()
+    {
+        return ExecuteExclusive(() =>
+        {
+            ThrowIfDisposed();
+            return new PluginWorkspacePreview(_state, _pendingSaveSnapshots.Values.ToArray());
+        });
+    }
+
+    /// <summary>Searches winning records without retaining the unmatched catalog.</summary>
+    /// <param name="familyId">The declared family identifier.</param>
+    /// <param name="editorId">An optional case-insensitive EditorID substring. Null or whitespace matches every winning record.</param>
+    /// <param name="skip">The number of matches to skip.</param>
+    /// <param name="take">The maximum number of summaries to retain, from 1 through <see cref="PluginRecordSearchPage.MaximumTake"/>.</param>
+    /// <param name="expectedRevision">The cursor revision that must still be current, when a cursor was supplied.</param>
+    /// <param name="cancellationToken">Cancellation honored before and during the scan. A canceled scan returns no page.</param>
+    /// <returns>One revision-bound page of winning summaries.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="familyId"/> is not editable in this workspace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the page bounds are outside the supported range.</exception>
+    /// <exception cref="PluginWorkspaceException">Thrown when <paramref name="expectedRevision"/> is no longer current.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    public PluginRecordSearchPage SearchWinningRecords(
+        string familyId,
+        string? editorId,
+        int skip,
+        int take,
+        ulong? expectedRevision = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteExclusive(() =>
+        {
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (expectedRevision is not null)
+            {
+                ThrowIfCursorRevision(expectedRevision.Value);
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(familyId);
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(take, PluginRecordSearchPage.MaximumTake);
+            var descriptor = Records.Families.FirstOrDefault(family =>
+                string.Equals(family.FamilyId, familyId, StringComparison.Ordinal));
+            if (descriptor is null)
+            {
+                throw new ArgumentException($"Family '{familyId}' is not editable in this workspace.", nameof(familyId));
+            }
+
+            var filter = string.IsNullOrWhiteSpace(editorId) ? null : editorId;
+            var matches = new List<PluginRecordSummary>(take);
+            var skipped = 0;
+            var hasMore = false;
+            foreach (var context in _integration.EnumerateWinningContexts(LinkCache, descriptor.GetterType))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (context.Record is not IMajorRecordGetter record)
+                {
+                    continue;
+                }
+
+                if (filter is not null
+                    && (record.EditorID is null
+                        || record.EditorID.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0))
+                {
+                    continue;
+                }
+
+                if (skipped < skip)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                if (matches.Count == take)
+                {
+                    hasMore = true;
+                    break;
+                }
+
+                matches.Add(new PluginRecordSummary(
+                    familyId,
+                    record.FormKey,
+                    context.ModKey,
+                    context.ModKey,
+                    record.EditorID));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return new PluginRecordSearchPage(_state.Revision, skip, take, hasMore, matches);
         });
     }
 
