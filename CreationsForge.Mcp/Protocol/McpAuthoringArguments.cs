@@ -36,7 +36,7 @@ internal static class McpAuthoringArguments
     public static GameRelease ParseRelease(string? release, IReadOnlySet<GameRelease> supported)
     {
         if (string.IsNullOrWhiteSpace(release)
-            || !Enum.TryParse<GameRelease>(release, ignoreCase: false, out var parsed)
+            || !TryParseDefined<GameRelease>(release, ignoreCase: false, out var parsed)
             || !supported.Contains(parsed))
         {
             throw new McpContractException("invalid_input", $"Release '{release}' is not supported.");
@@ -126,7 +126,7 @@ internal static class McpAuthoringArguments
     /// <exception cref="McpContractException">Thrown when the style is not recognized.</exception>
     public static MasterStyle ParseMasterStyle(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text) || !Enum.TryParse<MasterStyle>(text, ignoreCase: false, out var style))
+        if (string.IsNullOrWhiteSpace(text) || !TryParseDefined<MasterStyle>(text, ignoreCase: false, out var style))
         {
             throw new McpContractException("invalid_input", $"Master style '{text}' is not recognized.");
         }
@@ -141,7 +141,7 @@ internal static class McpAuthoringArguments
     public static PluginTextStorageMode ParseTextStorage(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)
-            || !Enum.TryParse<PluginTextStorageMode>(text, ignoreCase: false, out var mode))
+            || !TryParseDefined<PluginTextStorageMode>(text, ignoreCase: false, out var mode))
         {
             throw new McpContractException("invalid_input", $"Text storage mode '{text}' is not recognized.");
         }
@@ -160,7 +160,7 @@ internal static class McpAuthoringArguments
             return Language.English;
         }
 
-        if (!Enum.TryParse<Language>(text, ignoreCase: false, out var language))
+        if (!TryParseDefined<Language>(text, ignoreCase: false, out var language))
         {
             throw new McpContractException("invalid_input", $"Language '{text}' is not recognized.");
         }
@@ -201,7 +201,7 @@ internal static class McpAuthoringArguments
                 throw new McpContractException("invalid_input", "Each field change requires a path.");
             }
 
-            if (!Enum.TryParse<RecordCollectionOperation>(change.Operation, ignoreCase: false, out var operation))
+            if (!TryParseDefined<RecordCollectionOperation>(change.Operation, ignoreCase: false, out var operation))
             {
                 throw new McpContractException("invalid_input", $"Field operation '{change.Operation}' is not recognized.");
             }
@@ -299,6 +299,24 @@ internal static class McpAuthoringArguments
         return payload;
     }
 
+    /// <summary>Parses a named enum member and rejects undefined numeric values.</summary>
+    /// <typeparam name="TEnum">The enum type.</typeparam>
+    /// <param name="text">The member name.</param>
+    /// <param name="ignoreCase">Whether member names are matched without case.</param>
+    /// <param name="value">The defined member when parsing succeeds.</param>
+    /// <returns><see langword="true"/> when <paramref name="text"/> names a defined member.</returns>
+    public static bool TryParseDefined<TEnum>(string? text, bool ignoreCase, out TEnum value)
+        where TEnum : struct, Enum
+    {
+        if (Enum.TryParse(text, ignoreCase, out value) && Enum.IsDefined(value))
+        {
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     /// <summary>Requires a workspace cursor to name the same session and revision.</summary>
     /// <param name="payload">The decoded cursor.</param>
     /// <param name="workspaceId">The requested session.</param>
@@ -323,6 +341,27 @@ internal static class McpAuthoringArguments
                 "stale_revision",
                 $"Workspace revision is '{revision}', not cursor revision '{payload.Revision}'.");
         }
+    }
+
+    /// <summary>Requires a cursor to name this session and returns its revision without reading live state.</summary>
+    /// <param name="payload">The decoded cursor.</param>
+    /// <param name="workspaceId">The requested session.</param>
+    /// <returns>The revision named by the cursor.</returns>
+    /// <exception cref="McpContractException">Thrown when the cursor belongs to another session or has no revision.</exception>
+    public static ulong RequireCursorIdentity(McpCursorPayload payload, string workspaceId)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        if (!string.Equals(payload.WorkspaceId, workspaceId, StringComparison.Ordinal))
+        {
+            throw new McpContractException("invalid_input", "The cursor workspace does not match this request.");
+        }
+
+        if (payload.Revision is null)
+        {
+            throw new McpContractException("invalid_input", "The cursor is missing a workspace revision.");
+        }
+
+        return payload.Revision.Value;
     }
 
     /// <summary>Requires two cursor identities to match exactly.</summary>

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ModelContextProtocol.Protocol;
@@ -39,11 +40,27 @@ internal static class McpToolResults
 
     /// <summary>Serializes a payload with the tool serializer.</summary>
     /// <param name="value">The value to serialize.</param>
-    /// <returns>Canonical JSON for fingerprints and cursors.</returns>
+    /// <returns>JSON for cursors and structured payloads. Object key order is preserved.</returns>
     public static string Serialize(object value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return JsonSerializer.Serialize(value, value.GetType(), SerializerOptions);
+    }
+
+    /// <summary>Serializes a replay fingerprint with recursively ordered object keys.</summary>
+    /// <param name="value">The tool arguments.</param>
+    /// <returns>JSON whose object keys are ordered and whose array order is preserved.</returns>
+    public static string Fingerprint(object value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var element = JsonSerializer.SerializeToElement(value, value.GetType(), SerializerOptions);
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            WriteCanonical(writer, element);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
     }
 
     private static McpInvocation Create(string text, JsonElement structured, bool isError, bool cacheable)
@@ -55,6 +72,35 @@ internal static class McpToolResults
             StructuredContent = structured,
         };
         return new McpInvocation(result, cacheable, structured.GetRawText(), text, isError);
+    }
+
+    private static void WriteCanonical(Utf8JsonWriter writer, JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                writer.WriteStartObject();
+                foreach (var property in element.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
+                {
+                    writer.WritePropertyName(property.Name);
+                    WriteCanonical(writer, property.Value);
+                }
+
+                writer.WriteEndObject();
+                return;
+            case JsonValueKind.Array:
+                writer.WriteStartArray();
+                foreach (var item in element.EnumerateArray())
+                {
+                    WriteCanonical(writer, item);
+                }
+
+                writer.WriteEndArray();
+                return;
+            default:
+                writer.WriteRawValue(element.GetRawText());
+                return;
+        }
     }
 
     private static JsonSerializerOptions CreateSerializerOptions()

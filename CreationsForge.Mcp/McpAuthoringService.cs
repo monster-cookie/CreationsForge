@@ -186,7 +186,7 @@ public sealed partial class McpAuthoringService
         try
         {
             var id = McpAuthoringArguments.RequireOperationId(operationId);
-            var fingerprint = tool + "\n" + McpToolResults.Serialize(arguments);
+            var fingerprint = tool + "\n" + McpToolResults.Fingerprint(arguments);
             return await _replay.ExecuteAsync(id, fingerprint, execute, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)

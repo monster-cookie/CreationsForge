@@ -213,9 +213,17 @@ public sealed partial class McpAuthoringService
 
         if (workspace is null)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            _sessions.CompleteClose(session);
-            return McpToolResults.Success(new McpWorkspaceCloseResult(id, closed: true, revision: 0));
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                _sessions.CompleteClose(session);
+                return McpToolResults.Success(new McpWorkspaceCloseResult(id, closed: true, revision: 0));
+            }
+            catch (Exception exception)
+            {
+                _sessions.AbortClose(session);
+                return McpErrorMapper.Map(exception);
+            }
         }
 
         try
@@ -325,7 +333,8 @@ public sealed partial class McpAuthoringService
         }
 
         var skip = payload?.Skip ?? 0;
-        var projected = preview.PendingRecords
+        var (records, hasMore) = McpAuthoringProjection.Page(preview.PendingRecords, skip);
+        var page = records
             .Select(record => ProjectSnapshot(
                 workspace,
                 record,
@@ -334,7 +343,6 @@ public sealed partial class McpAuthoringService
                 McpAuthoringProjection.PreviewFieldsCursor,
                 0))
             .ToArray();
-        var (page, hasMore) = McpAuthoringProjection.Page(projected, skip);
         string? next = null;
         if (hasMore)
         {

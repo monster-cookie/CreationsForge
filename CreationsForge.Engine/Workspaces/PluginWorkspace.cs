@@ -89,6 +89,18 @@ public sealed class PluginWorkspace : IDisposable
         ObjectDisposedException.ThrowIf(_disposed || Volatile.Read(ref _closeRequested) != 0, this);
     }
 
+    /// <summary>Throws when a cursor names a workspace revision that is no longer current.</summary>
+    /// <param name="expectedRevision">The revision named by the cursor.</param>
+    /// <exception cref="PluginWorkspaceException">Thrown when the live revision differs.</exception>
+    internal void ThrowIfCursorRevision(ulong expectedRevision)
+    {
+        if (_state.Revision != expectedRevision)
+        {
+            throw new PluginWorkspaceException(
+                $"Workspace revision is '{_state.Revision}', not cursor revision '{expectedRevision}'.");
+        }
+    }
+
     /// <summary>Gets the Mutagen link cache whose immutable base is <see cref="Sources"/> and whose mutable layer is <see cref="Output"/>.</summary>
     public ILinkCache LinkCache => _linkCache;
 
@@ -143,14 +155,30 @@ public sealed class PluginWorkspace : IDisposable
     /// <param name="editorId">An optional case-insensitive EditorID substring. Null or whitespace matches every winning record.</param>
     /// <param name="skip">The number of matches to skip.</param>
     /// <param name="take">The maximum number of summaries to retain, from 1 through <see cref="PluginRecordSearchPage.MaximumTake"/>.</param>
+    /// <param name="expectedRevision">The cursor revision that must still be current, when a cursor was supplied.</param>
+    /// <param name="cancellationToken">Cancellation honored before and during the scan. A canceled scan returns no page.</param>
     /// <returns>One revision-bound page of winning summaries.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="familyId"/> is not editable in this workspace.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the page bounds are outside the supported range.</exception>
-    public PluginRecordSearchPage SearchWinningRecords(string familyId, string? editorId, int skip, int take)
+    /// <exception cref="PluginWorkspaceException">Thrown when <paramref name="expectedRevision"/> is no longer current.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    public PluginRecordSearchPage SearchWinningRecords(
+        string familyId,
+        string? editorId,
+        int skip,
+        int take,
+        ulong? expectedRevision = null,
+        CancellationToken cancellationToken = default)
     {
         return ExecuteExclusive(() =>
         {
             ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (expectedRevision is not null)
+            {
+                ThrowIfCursorRevision(expectedRevision.Value);
+            }
+
             ArgumentException.ThrowIfNullOrWhiteSpace(familyId);
             ArgumentOutOfRangeException.ThrowIfNegative(skip);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
@@ -168,6 +196,7 @@ public sealed class PluginWorkspace : IDisposable
             var hasMore = false;
             foreach (var context in _integration.EnumerateWinningContexts(LinkCache, descriptor.GetterType))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (context.Record is not IMajorRecordGetter record)
                 {
                     continue;
@@ -200,6 +229,7 @@ public sealed class PluginWorkspace : IDisposable
                     record.EditorID));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             return new PluginRecordSearchPage(_state.Revision, skip, take, hasMore, matches);
         });
     }

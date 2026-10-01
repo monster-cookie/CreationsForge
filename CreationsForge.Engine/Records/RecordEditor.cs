@@ -38,36 +38,52 @@ public sealed class RecordEditor
         return _workspace.ExecuteExclusive(() => ReadCore(locator));
     }
 
+    /// <summary>Reads registered fields and the revision observed inside the same workspace operation.</summary>
+    /// <param name="locator">The exact family, origin identity, and containing plugin.</param>
+    /// <param name="expectedRevision">The cursor revision that must still be current, when a cursor was supplied.</param>
+    /// <returns>The transient projection and the revision observed while the workspace gate was held.</returns>
+    /// <exception cref="PluginWorkspaceException">Thrown when <paramref name="expectedRevision"/> is no longer current.</exception>
+    public (RecordSnapshot Snapshot, ulong Revision) ReadObserved(RecordLocator locator, ulong? expectedRevision = null)
+    {
+        return _workspace.ExecuteExclusive(() =>
+        {
+            if (expectedRevision is not null)
+            {
+                _workspace.ThrowIfCursorRevision(expectedRevision.Value);
+            }
+
+            return (ReadCore(locator), _workspace.State.Revision);
+        });
+    }
+
     /// <summary>Compares registered fields from two exact versions of the same declared family.</summary>
     /// <param name="left">The left exact record locator.</param>
     /// <param name="right">The right exact record locator.</param>
     /// <returns>Both transient snapshots and descriptor-ordered differences.</returns>
     public RecordComparison Compare(RecordLocator left, RecordLocator right)
     {
+        return _workspace.ExecuteExclusive(() => CompareCore(left, right));
+    }
+
+    /// <summary>Compares registered fields and returns the revision observed inside the same workspace operation.</summary>
+    /// <param name="left">The left exact record locator.</param>
+    /// <param name="right">The right exact record locator.</param>
+    /// <param name="expectedRevision">The cursor revision that must still be current, when a cursor was supplied.</param>
+    /// <returns>The comparison and the revision observed while the workspace gate was held.</returns>
+    /// <exception cref="PluginWorkspaceException">Thrown when <paramref name="expectedRevision"/> is no longer current.</exception>
+    public (RecordComparison Comparison, ulong Revision) CompareObserved(
+        RecordLocator left,
+        RecordLocator right,
+        ulong? expectedRevision = null)
+    {
         return _workspace.ExecuteExclusive(() =>
         {
-            ArgumentNullException.ThrowIfNull(left);
-            ArgumentNullException.ThrowIfNull(right);
-            if (!string.Equals(left.FamilyId, right.FamilyId, StringComparison.Ordinal))
+            if (expectedRevision is not null)
             {
-                throw new RecordEditingException($"Cannot compare declared families '{left.FamilyId}' and '{right.FamilyId}'.");
+                _workspace.ThrowIfCursorRevision(expectedRevision.Value);
             }
 
-            var leftSnapshot = ReadCore(left);
-            var rightSnapshot = ReadCore(right);
-            var family = GetFamily(left.FamilyId);
-            var differences = new List<RecordDifference>();
-            foreach (var field in family.Descriptor.Fields)
-            {
-                var leftValue = leftSnapshot.Values[field.Path];
-                var rightValue = rightSnapshot.Values[field.Path];
-                if (!RecordValueComparer.Equals(leftValue, rightValue))
-                {
-                    differences.Add(new RecordDifference(field.Path, leftValue, rightValue));
-                }
-            }
-
-            return new RecordComparison(leftSnapshot, rightSnapshot, differences);
+            return (CompareCore(left, right), _workspace.State.Revision);
         });
     }
 
@@ -78,6 +94,32 @@ public sealed class RecordEditor
     public RecordApplyResult Apply(RecordChangeSet changeSet)
     {
         return _workspace.ExecuteExclusive(() => ApplyCore(changeSet));
+    }
+
+    private RecordComparison CompareCore(RecordLocator left, RecordLocator right)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+        if (!string.Equals(left.FamilyId, right.FamilyId, StringComparison.Ordinal))
+        {
+            throw new RecordEditingException($"Cannot compare declared families '{left.FamilyId}' and '{right.FamilyId}'.");
+        }
+
+        var leftSnapshot = ReadCore(left);
+        var rightSnapshot = ReadCore(right);
+        var family = GetFamily(left.FamilyId);
+        var differences = new List<RecordDifference>();
+        foreach (var field in family.Descriptor.Fields)
+        {
+            var leftValue = leftSnapshot.Values[field.Path];
+            var rightValue = rightSnapshot.Values[field.Path];
+            if (!RecordValueComparer.Equals(leftValue, rightValue))
+            {
+                differences.Add(new RecordDifference(field.Path, leftValue, rightValue));
+            }
+        }
+
+        return new RecordComparison(leftSnapshot, rightSnapshot, differences);
     }
 
     private RecordApplyResult ApplyCore(RecordChangeSet changeSet)

@@ -88,12 +88,17 @@ internal static class McpValueMapper
 
     private static RecordValue ToRecordValue(McpRecordValueDto dto, int depth)
     {
+        if (dto is null)
+        {
+            throw new McpContractException("invalid_input", "A nested record value is required.");
+        }
+
         if (depth > MaximumDepth)
         {
             throw new McpContractException("invalid_input", "A record value is nested more than 32 levels deep.");
         }
 
-        if (!Enum.TryParse<RecordValueKind>(dto.Kind, ignoreCase: false, out var kind))
+        if (!McpAuthoringArguments.TryParseDefined<RecordValueKind>(dto.Kind, ignoreCase: false, out var kind))
         {
             throw new McpContractException("invalid_input", $"Record value kind '{dto.Kind}' is not recognized.");
         }
@@ -135,7 +140,7 @@ internal static class McpValueMapper
 
     private static Language ParseLanguage(string text)
     {
-        if (!Enum.TryParse<Language>(text, ignoreCase: true, out var language))
+        if (!McpAuthoringArguments.TryParseDefined<Language>(text, ignoreCase: true, out var language))
         {
             throw new McpContractException("invalid_input", $"Language '{text}' is not recognized.");
         }

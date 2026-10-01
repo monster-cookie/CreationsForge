@@ -30,7 +30,7 @@ public sealed partial class McpAuthoringService
                 return failure!;
             }
 
-            return Search(workspace!, id, familyId, normalizedEditorId, cursor);
+            return Search(workspace!, id, familyId, normalizedEditorId, cursor, cancellationToken);
         });
     }
 
@@ -189,20 +189,28 @@ public sealed partial class McpAuthoringService
         string workspaceId,
         string? familyId,
         string? editorId,
-        string? cursor)
+        string? cursor,
+        CancellationToken cancellationToken)
     {
         var parsedFamily = McpAuthoringArguments.RequireText(familyId, "familyId");
         var payload = McpAuthoringArguments.DecodeCursor(cursor, McpAuthoringProjection.SearchCursor);
+        ulong? expectedRevision = null;
         var skip = 0;
         if (payload is not null)
         {
-            McpAuthoringArguments.BindWorkspace(payload, workspaceId, workspace.State.Revision);
+            expectedRevision = McpAuthoringArguments.RequireCursorIdentity(payload, workspaceId);
             McpAuthoringArguments.Match(payload.FamilyId, parsedFamily, "familyId");
             McpAuthoringArguments.Match(payload.EditorId, editorId, "editorId");
             skip = payload.Skip;
         }
 
-        var page = workspace.SearchWinningRecords(parsedFamily, editorId, skip, McpAuthoringContract.PageSize);
+        var page = workspace.SearchWinningRecords(
+            parsedFamily,
+            editorId,
+            skip,
+            McpAuthoringContract.PageSize,
+            expectedRevision,
+            cancellationToken);
         string? next = null;
         if (page.HasMore)
         {
@@ -235,18 +243,18 @@ public sealed partial class McpAuthoringService
     {
         var locator = ParseLocator(familyId, formKey, containingModKey);
         var payload = McpAuthoringArguments.DecodeCursor(cursor, McpAuthoringProjection.FieldsCursor);
+        ulong? expectedRevision = null;
         var skip = 0;
         if (payload is not null)
         {
-            McpAuthoringArguments.BindWorkspace(payload, workspaceId, workspace.State.Revision);
+            expectedRevision = McpAuthoringArguments.RequireCursorIdentity(payload, workspaceId);
             McpAuthoringArguments.Match(payload.FamilyId, locator.FamilyId, "familyId");
             McpAuthoringArguments.Match(payload.FormKey, locator.FormKey.ToString(), "formKey");
             McpAuthoringArguments.Match(payload.ContainingModKey, locator.ContainingModKey.ToString(), "containingModKey");
             skip = payload.Skip;
         }
 
-        var snapshot = workspace.Records.Read(locator);
-        var revision = workspace.State.Revision;
+        var (snapshot, revision) = workspace.Records.ReadObserved(locator, expectedRevision);
         return McpToolResults.Success(new McpRecordReadResult(
             workspaceId,
             revision,
@@ -266,10 +274,11 @@ public sealed partial class McpAuthoringService
         var left = ParseLocator(familyId, leftFormKey, leftContainingModKey);
         var right = ParseLocator(familyId, rightFormKey, rightContainingModKey);
         var payload = McpAuthoringArguments.DecodeCursor(cursor, McpAuthoringProjection.CompareCursor);
+        ulong? expectedRevision = null;
         var skip = 0;
         if (payload is not null)
         {
-            McpAuthoringArguments.BindWorkspace(payload, workspaceId, workspace.State.Revision);
+            expectedRevision = McpAuthoringArguments.RequireCursorIdentity(payload, workspaceId);
             McpAuthoringArguments.Match(payload.FamilyId, left.FamilyId, "familyId");
             McpAuthoringArguments.Match(payload.FormKey, left.FormKey.ToString(), "formKey");
             McpAuthoringArguments.Match(payload.ContainingModKey, left.ContainingModKey.ToString(), "containingModKey");
@@ -281,8 +290,7 @@ public sealed partial class McpAuthoringService
             skip = payload.Skip;
         }
 
-        var comparison = workspace.Records.Compare(left, right);
-        var revision = workspace.State.Revision;
+        var (comparison, revision) = workspace.Records.CompareObserved(left, right, expectedRevision);
         var differences = comparison.Differences
             .Select(difference => new McpRecordDifferenceResult(
                 difference.Path,

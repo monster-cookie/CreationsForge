@@ -9,8 +9,8 @@ namespace CreationsForge.Mcp.Sessions;
 /// </summary>
 internal sealed class McpOperationReplay
 {
-    private const int MaximumCachedResults = 128;
-    private const int MaximumExpiredIds = 1024;
+    internal const int MaximumCachedResults = 128;
+    internal const int MaximumExpiredIds = 1024;
 
     private readonly object _gate = new();
     private readonly Dictionary<string, Flight> _inFlight = new(StringComparer.Ordinal);
@@ -63,6 +63,10 @@ internal sealed class McpOperationReplay
                 existing.WaiterCount++;
                 joined = existing;
             }
+            else if (!CanAdmit())
+            {
+                return Capacity().Replay();
+            }
             else
             {
                 owned = new Flight(fingerprint);
@@ -110,8 +114,7 @@ internal sealed class McpOperationReplay
         Complete(operationId, flight, invocation);
         if (cancellationToken.IsCancellationRequested)
         {
-            // Other waiters already observed the shared result. The owner's canceled return must not be replayed.
-            Forget(operationId);
+            // Waiters already observed the shared result. A cacheable completion stays replayable.
             return McpErrorMapper.Canceled().Replay();
         }
 
@@ -172,12 +175,9 @@ internal sealed class McpOperationReplay
         }
     }
 
-    private void Forget(string operationId)
+    private bool CanAdmit()
     {
-        lock (_gate)
-        {
-            _completed.Remove(operationId);
-        }
+        return _completed.Count + _expired.Count + _inFlight.Count < MaximumCachedResults + MaximumExpiredIds;
     }
 
     private void Remember(string operationId, string fingerprint, McpInvocation invocation)
@@ -198,6 +198,14 @@ internal sealed class McpOperationReplay
 
         _completed[operationId] = new CompletedOperation(fingerprint, invocation);
         _completedOrder.Enqueue(operationId);
+    }
+
+    private static McpInvocation Capacity()
+    {
+        return McpToolResults.Failure(
+            "replay_capacity",
+            "The operation replay cache is full and will not run a new operation.",
+            cacheable: false);
     }
 
     private static McpInvocation Expired()

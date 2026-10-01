@@ -188,6 +188,11 @@ internal static class McpErrorMapper
 
     private static McpInvocation MapWorkspace(string message)
     {
+        if (message.Contains("Workspace revision is", StringComparison.Ordinal))
+        {
+            return McpToolResults.Failure("stale_revision", message);
+        }
+
         if (message.Contains("Required source plugin", StringComparison.Ordinal)
             && message.Contains("is missing", StringComparison.Ordinal))
         {

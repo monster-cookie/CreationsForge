@@ -125,9 +125,9 @@ public sealed class McpOperationReplayTests
         Assert.Equal(1, calls);
     }
 
-    /// <summary>Returns an uncached cancellation when the owner cancels, even if execution already succeeded.</summary>
+    /// <summary>Returns cancellation only to the canceled owner and keeps a cacheable result replayable.</summary>
     [Fact]
-    public async Task OwnerCancellationIsNotCached()
+    public async Task OwnerCancellationKeepsACacheableResult()
     {
         var replay = new McpOperationReplay();
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -135,7 +135,7 @@ public sealed class McpOperationReplayTests
         var calls = 0;
         using var canceled = new CancellationTokenSource();
 
-        var first = replay.ExecuteAsync(
+        var owner = replay.ExecuteAsync(
             "owner",
             "same",
             async _ =>
@@ -147,24 +147,69 @@ public sealed class McpOperationReplayTests
             },
             canceled.Token);
         await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var joiner = replay.ExecuteAsync(
+            "owner",
+            "same",
+            _ => throw new InvalidOperationException("A joiner executed the operation."),
+            CancellationToken.None);
         await canceled.CancelAsync();
         release.TrySetResult();
 
-        var canceledResult = await first.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        Assert.Equal("canceled", ErrorCode(canceledResult));
-
-        var second = await replay.ExecuteAsync(
+        var canceledResult = await owner.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var joined = await joiner.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var replayed = await replay.ExecuteAsync(
             "owner",
             "same",
             _ =>
             {
                 Interlocked.Increment(ref calls);
-                return Task.FromResult(McpToolResults.Success(new { ok = true }));
+                return Task.FromResult(McpToolResults.Success(new { ok = false }));
             },
             CancellationToken.None);
 
-        Assert.False(second.IsError);
-        Assert.Equal(2, calls);
+        Assert.Equal("canceled", ErrorCode(canceledResult));
+        Assert.False(joined.IsError);
+        Assert.Equal("true", Structured(joined).GetProperty("ok").GetRawText());
+        Assert.False(replayed.IsError);
+        Assert.Equal("true", Structured(replayed).GetProperty("ok").GetRawText());
+        Assert.Equal(1, calls);
+    }
+
+    /// <summary>Refuses a new operation at the admission ceiling without expiring an identifier that never ran.</summary>
+    [Fact]
+    public async Task DistinctOperationsStopAtTheAdmissionCeiling()
+    {
+        var replay = new McpOperationReplay();
+        var limit = McpOperationReplay.MaximumCachedResults + McpOperationReplay.MaximumExpiredIds;
+        for (var index = 0; index < limit; index++)
+        {
+            var cached = await replay.ExecuteAsync(
+                index.ToString(),
+                "same",
+                _ => Task.FromResult(McpToolResults.Success(new { index })),
+                CancellationToken.None);
+            Assert.False(cached.IsError);
+        }
+
+        var refused = await replay.ExecuteAsync(
+            "overflow",
+            "same",
+            _ => throw new InvalidOperationException("A refused operation executed."),
+            CancellationToken.None);
+        var expired = await replay.ExecuteAsync(
+            "0",
+            "same",
+            _ => throw new InvalidOperationException("An expired identifier executed."),
+            CancellationToken.None);
+        var replayed = await replay.ExecuteAsync(
+            (limit - 1).ToString(),
+            "same",
+            _ => throw new InvalidOperationException("A cached identifier executed again."),
+            CancellationToken.None);
+
+        Assert.Equal("replay_capacity", ErrorCode(refused));
+        Assert.Equal("replay_expired", ErrorCode(expired));
+        Assert.False(replayed.IsError);
     }
 
     private static string ErrorCode(CallToolResult result)
