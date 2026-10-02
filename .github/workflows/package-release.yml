@@ -203,7 +203,7 @@ jobs:
                     "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
                     "/DMcpSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/mcp).Path)" `
                     "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
-                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
+                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge.Workbench/Resources/AppIcon/CreationsForge.ico).Path)" `
                     "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
                     "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
                     "/DApplicationVersion=$env:PACKAGE_VERSION" `

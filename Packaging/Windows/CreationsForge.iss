@@ -5,7 +5,7 @@
 #define ApplicationPublisher "Venpi"
 #endif
 #ifndef InstallerIconFile
-#define InstallerIconFile "..\..\CreationsForge\Resources\AppIcon\CreationsForge.ico"
+#define InstallerIconFile "..\..\CreationsForge.Workbench\Resources\AppIcon\CreationsForge.ico"
 #endif
 #define DesktopExecutable "CreationsForge.exe"
 [Setup]
