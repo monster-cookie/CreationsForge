@@ -155,7 +155,8 @@ public sealed class WorkbenchViewModelTests
         await viewModel.OpenOutputAsync(createNew: true);
 
         Assert.Contains("Output operation failed", viewModel.Diagnostics, StringComparison.Ordinal);
-        Assert.DoesNotContain("attached", viewModel.Status, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Created", viewModel.Status, StringComparison.Ordinal);
+        Assert.DoesNotContain(session.Calls, call => call.Tool == "workspace_save");
         var output = Assert.Single(session.Calls, call => call.Tool == "output_create");
         Assert.Contains("\"language\":\"French\"", output.Arguments, StringComparison.Ordinal);
         Assert.Contains("\"masterStyle\":\"Small\"", output.Arguments, StringComparison.Ordinal);
@@ -170,6 +171,35 @@ public sealed class WorkbenchViewModelTests
         Assert.Equal("Disconnected", viewModel.Status);
     }
 
+    /// <summary>Creating an output saves it and refuses a second create while that session is open.</summary>
+    [Fact]
+    public async Task CreateOutputSavesThePluginAndBlocksAnotherOutput()
+    {
+        var session = new FakeWorkbenchSession();
+        var outputPath = Path.Combine(Path.GetTempPath(), "CreationsForgeOutput.esm");
+        var viewModel = new WorkbenchViewModel((_, _) => Task.FromResult<IWorkbenchMcpSession>(session))
+        {
+            DataDirectory = Path.GetTempPath(),
+            OutputPath = outputPath,
+        };
+
+        await viewModel.ConnectAsync();
+        await viewModel.OpenWorkspaceAsync();
+        await viewModel.OpenOutputAsync(createNew: true);
+
+        Assert.Equal("Created " + outputPath + ".", viewModel.Status);
+        Assert.False(viewModel.CanCreateOutput);
+        Assert.False(viewModel.CanOpenOutput);
+        Assert.Equal(
+            ["output_create", "workspace_save"],
+            session.Calls.Skip(session.Calls.Count - 2).Select(call => call.Tool).ToArray());
+
+        await viewModel.OpenOutputAsync(createNew: true);
+
+        Assert.Equal(1, session.Calls.Count(call => call.Tool == "output_create"));
+        Assert.Equal(1, session.Calls.Count(call => call.Tool == "workspace_save"));
+    }
+
     /// <summary>Records tool calls made by the view model without starting a process.</summary>
     private sealed class FakeWorkbenchSession : IWorkbenchMcpSession
     {
@@ -181,6 +211,8 @@ public sealed class WorkbenchViewModelTests
 
         public bool Disposed { get; private set; }
 
+        private string? _outputPath;
+
         public Task<JsonObject> CallAsync(string tool, JsonObject arguments, CancellationToken cancellationToken)
         {
             Calls.Add((tool, arguments.ToJsonString()));
@@ -190,10 +222,19 @@ public sealed class WorkbenchViewModelTests
                 throw new InvalidOperationException($"MCP {tool} failed: rejected");
             }
 
-            return Task.FromResult(new JsonObject
+            if (arguments["outputPath"] is JsonValue outputPath && outputPath.TryGetValue<string>(out var path))
             {
-                ["structuredContent"] = new JsonObject { ["workspaceId"] = "session-1" },
-            });
+                _outputPath = path;
+            }
+
+            var content = new JsonObject { ["workspaceId"] = "session-1" };
+            if (tool == "workspace_save")
+            {
+                content["status"] = "Succeeded";
+                content["destinationPath"] = _outputPath;
+            }
+
+            return Task.FromResult(new JsonObject { ["structuredContent"] = content });
         }
 
         public ValueTask DisposeAsync()

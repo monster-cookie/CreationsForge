@@ -27,6 +27,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     private string _status = "Disconnected";
     private string _diagnostics = "Select an MCP executable and connect to begin.";
     private string? _workspaceId;
+    private bool _outputAttached;
     private bool _connecting;
     private bool _busy;
     private bool _closing;
@@ -147,8 +148,8 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <summary>Gets whether Open workspace can send <c>workspace_open</c>.</summary>
     public bool CanOpenWorkspace => _client is not null && _workspaceId is null && !_busy && !_closing;
 
-    /// <summary>Gets whether Create output can send <c>output_create</c>.</summary>
-    public bool CanCreateOutput => _client is not null && _workspaceId is not null && !_busy && !_closing;
+    /// <summary>Gets whether Create output can send <c>output_create</c> and then <c>workspace_save</c>.</summary>
+    public bool CanCreateOutput => _client is not null && _workspaceId is not null && !_outputAttached && !_busy && !_closing;
 
     /// <summary>Gets whether Open output can send <c>output_open</c>.</summary>
     public bool CanOpenOutput => CanCreateOutput;
@@ -181,8 +182,8 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     public Task OpenWorkspaceAsync() => RunSessionOperationAsync(OpenWorkspaceCoreAsync);
 
     /// <summary>Sends <c>output_create</c> or <c>output_open</c> for the explicit output settings.</summary>
-    /// <param name="createNew"><see langword="true"/> to create a new plugin; <see langword="false"/> to open an existing one.</param>
-    /// <returns>A task that completes when the result or failure is visible. A tool error does not claim the output was attached.</returns>
+    /// <param name="createNew"><see langword="true"/> to create and save a new plugin; <see langword="false"/> to open an existing one.</param>
+    /// <returns>A task that completes when the result or failure is visible. A tool error does not claim the output file was written.</returns>
     public Task OpenOutputAsync(bool createNew) => RunSessionOperationAsync(token => OpenOutputCoreAsync(createNew, token));
 
     /// <summary>Cancels startup or the active call, closes the workspace when one is open, and stops the child process.</summary>
@@ -410,15 +411,17 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         try
         {
             string? workspaceId;
+            var outputAttached = false;
             lock (_state)
             {
                 workspaceId = _workspaceId;
+                outputAttached = _outputAttached;
             }
 
             var tool = createNew ? "output_create" : "output_open";
-            if (workspaceId is null || _closing)
+            if (workspaceId is null || outputAttached || _closing)
             {
-                Log.ForContext<WorkbenchViewModel>().Warning("Skipped {Tool} because no workspace is open.", tool);
+                Log.ForContext<WorkbenchViewModel>().Warning("Skipped {Tool} because no pending workspace can accept an output.", tool);
                 return;
             }
 
@@ -440,11 +443,50 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 ["textStorageMode"] = TextStorageMode,
                 ["language"] = Language,
             }, cancellationToken).ConfigureAwait(false);
-            Log.ForContext<WorkbenchViewModel>().Information("{Tool} completed for {OutputPath}.", tool, OutputPath);
+            lock (_state)
+            {
+                _outputAttached = true;
+            }
+
+            if (!createNew)
+            {
+                Log.ForContext<WorkbenchViewModel>().Information("Opened existing output {OutputPath}.", OutputPath);
+                Publish(() =>
+                {
+                    Status = "Existing output attached to the workspace.";
+                    Diagnostics = result.ToJsonString(IndentedJson);
+                });
+                return;
+            }
+
+            Log.ForContext<WorkbenchViewModel>().Information("Saving new output {OutputPath} for workspace {WorkspaceId}.", OutputPath, workspaceId);
+            var save = await CallAsync("workspace_save", new JsonObject
+            {
+                ["operationId"] = "workbench-save-" + Guid.NewGuid().ToString("N"),
+                ["workspaceId"] = workspaceId,
+            }, cancellationToken).ConfigureAwait(false);
+            var saveStatus = ReadString(save["structuredContent"]?["status"]);
+            var destination = ReadString(save["structuredContent"]?["destinationPath"]) ?? OutputPath;
+            if (!string.Equals(saveStatus, "Succeeded", StringComparison.Ordinal))
+            {
+                Log.ForContext<WorkbenchViewModel>().Warning(
+                    "Save of {OutputPath} returned status {SaveStatus}. Result: {Result}",
+                    OutputPath,
+                    saveStatus,
+                    Truncate(save.ToJsonString(IndentedJson)));
+                Publish(() =>
+                {
+                    Status = "Output save failed.";
+                    Diagnostics = save.ToJsonString(IndentedJson);
+                });
+                return;
+            }
+
+            Log.ForContext<WorkbenchViewModel>().Information("Created output file {DestinationPath}.", destination);
             Publish(() =>
             {
-                Status = createNew ? "New output attached to the workspace." : "Existing output attached to the workspace.";
-                Diagnostics = result.ToJsonString(IndentedJson);
+                Status = "Created " + destination + ".";
+                Diagnostics = save.ToJsonString(IndentedJson);
             });
         }
         catch (OperationCanceledException)
@@ -525,6 +567,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             {
                 _client = null;
                 _workspaceId = null;
+                _outputAttached = false;
                 _connecting = false;
                 _busy = false;
                 _closing = false;
