@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CreationsForge.Workbench"
+        x:Class="CreationsForge.Workbench.MainWindow"
+        x:DataType="vm:WorkbenchViewModel"
+        Title="CreationsForge MCP Workbench"
+        Width="900"
+        Height="720"
+        MinWidth="720"
+        MinHeight="560">
+  <ScrollViewer>
+    <StackPanel Margin="24" Spacing="16">
+      <StackPanel Spacing="4">
+        <TextBlock FontSize="26" FontWeight="Bold">MCP Workbench</TextBlock>
+        <TextBlock TextWrapping="Wrap">A standalone developer shell for the production CreationsForge MCP host. Select every input explicitly before connecting.</TextBlock>
+      </StackPanel>
+
+      <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">
+        <StackPanel Spacing="12">
+          <TextBlock FontSize="18" FontWeight="SemiBold">Connection</TextBlock>
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+            <TextBlock Grid.Row="0" VerticalAlignment="Center">MCP executable</TextBlock>
+            <TextBox Grid.Row="0" Grid.Column="1" Name="ExecutablePathTextBox" Text="{Binding McpExecutablePath}" PlaceholderText="Path to CreationsForge.Mcp.dll or executable" />
+            <Button Grid.Row="0" Grid.Column="2" Click="BrowseExecutableClick">Browse</Button>
+            <TextBlock Grid.Row="1" VerticalAlignment="Center">Game release</TextBlock>
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Releases}" SelectedItem="{Binding Release}" IsEnabled="{Binding CanEditSources}" />
+            <TextBlock Grid.Row="2" VerticalAlignment="Center">Data directory</TextBlock>
+            <TextBox Grid.Row="2" Grid.Column="1" Name="DataDirectoryTextBox" Text="{Binding DataDirectory}" PlaceholderText="Directory containing selected source plugins" IsEnabled="{Binding CanEditSources}" />
+            <Button Grid.Row="2" Grid.Column="2" Click="BrowseDataDirectoryClick" IsEnabled="{Binding CanEditSources}">Browse</Button>
+            <TextBlock Grid.Row="3" VerticalAlignment="Center">Source plugins</TextBlock>
+            <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SelectedPlugins}" PlaceholderText="Optional comma-separated plugin names, low to high priority" IsEnabled="{Binding CanEditSources}" />
+            <TextBlock Grid.Row="4" VerticalAlignment="Center">Status</TextBlock>
+            <TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Status}" TextWrapping="Wrap" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Click="ConnectClick" IsEnabled="{Binding CanConnect}">Connect</Button>
+            <Button Click="DisconnectClick" IsEnabled="{Binding CanDisconnect}">Disconnect</Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">
+        <StackPanel Spacing="12">
+          <TextBlock FontSize="18" FontWeight="SemiBold">Workspace output</TextBlock>
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+            <TextBlock Grid.Row="0" VerticalAlignment="Center">Output path</TextBlock>
+            <TextBox Grid.Row="0" Grid.Column="1" Name="OutputPathTextBox" Text="{Binding OutputPath}" PlaceholderText="Explicit output plugin path" />
+            <Button Grid.Row="0" Grid.Column="2" Click="BrowseOutputClick">Browse</Button>
+            <TextBlock Grid.Row="1" VerticalAlignment="Center">Master style</TextBlock>
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding MasterStyles}" SelectedItem="{Binding MasterStyle}" />
+            <TextBlock Grid.Row="2" VerticalAlignment="Center">Text storage</TextBlock>
+            <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding TextStorageModes}" SelectedItem="{Binding TextStorageMode}" />
+            <TextBlock Grid.Row="3" VerticalAlignment="Center">Language</TextBlock>
+            <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Click="OpenWorkspaceClick" IsEnabled="{Binding CanOpenWorkspace}">Open workspace</Button>
+            <Button Click="CreateOutputClick" IsEnabled="{Binding CanCreateOutput}">Create output</Button>
+            <Button Click="OpenOutputClick" IsEnabled="{Binding CanOpenOutput}">Open output</Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="18" FontWeight="SemiBold">Diagnostics</TextBlock>
+          <TextBlock Text="{Binding LogFilePath}" IsVisible="{Binding HasLogFile}" TextWrapping="Wrap" />
+          <TextBox Text="{Binding Diagnostics}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="150" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

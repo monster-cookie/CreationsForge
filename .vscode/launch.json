@@ -15,6 +15,19 @@
       "preLaunchTask": "build"
     },
     {
+      "name": "Debug Workbench",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/CreationsForge.Workbench/bin/Debug/net10.0/CreationsForgeWorkbench.exe",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "preLaunchTask": "build"
+    },
+    {
       "name": "Debug MCP",
       "type": "coreclr",
       "request": "launch",

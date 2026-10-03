@@ -108,7 +108,7 @@ jobs:
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/mcp -Force | Out-Null
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj `
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj `
                     --configuration Release `
                     --runtime win-x64 `
                     --self-contained true `
@@ -158,9 +158,9 @@ jobs:
                     -LiteralPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
                     -DestinationPath $mcpValidationRoot
 
-                  $desktopExecutable = Join-Path $desktopValidationRoot 'CreationsForge.exe'
+                  $desktopExecutable = Join-Path $desktopValidationRoot 'CreationsForgeWorkbench.exe'
                   if (-not (Test-Path -LiteralPath $desktopExecutable -PathType Leaf)) {
-                      throw "The Windows desktop archive does not contain CreationsForge.exe."
+                      throw "The Windows desktop archive does not contain CreationsForgeWorkbench.exe."
                   }
 
                   $env:CREATIONSFORGE_PACKAGED_MCP_PATH = (Resolve-Path (Join-Path $mcpValidationRoot 'CreationsForge.Mcp.exe')).Path
@@ -203,7 +203,7 @@ jobs:
                     "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
                     "/DMcpSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/mcp).Path)" `
                     "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
-                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
+                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge.Workbench/Resources/AppIcon/CreationsForge.ico).Path)" `
                     "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
                     "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
                     "/DApplicationVersion=$env:PACKAGE_VERSION" `
@@ -278,7 +278,7 @@ jobs:
                   mkdir -p ./artifacts/publish/linux/desktop
                   mkdir -p ./artifacts/publish/linux/mcp
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
@@ -338,7 +338,7 @@ jobs:
 
                   cat > "$launcher_dir/creationsforge" <<'EOF'
                   #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+                  exec /opt/CreationsForge/Desktop/CreationsForgeWorkbench "$@"
                   EOF
 
                   cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
@@ -348,7 +348,7 @@ jobs:
 
                   chmod +x "$launcher_dir/creationsforge"
                   chmod +x "$launcher_dir/creationsforge-mcp"
-                  chmod +x "$desktop_app/CreationsForge"
+                  chmod +x "$desktop_app/CreationsForgeWorkbench"
                   chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   cat > "$control_dir/control" <<EOF
@@ -377,10 +377,10 @@ jobs:
                   unzip -q ./artifacts/CreationsForge-Mcp-linux-x64-"$PACKAGE_VERSION".zip -d "$mcp_validation_root"
                   dpkg-deb --extract ./artifacts/CreationsForge_"${PACKAGE_VERSION}"_amd64.deb "$deb_validation_root"
 
-                  test -x "$desktop_validation_root/CreationsForge"
+                  test -x "$desktop_validation_root/CreationsForgeWorkbench"
                   test -x "$deb_validation_root/usr/bin/creationsforge"
                   test -x "$deb_validation_root/usr/bin/creationsforge-mcp"
-                  test -x "$deb_validation_root/opt/CreationsForge/Desktop/CreationsForge"
+                  test -x "$deb_validation_root/opt/CreationsForge/Desktop/CreationsForgeWorkbench"
                   test -x "$deb_validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
 
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_validation_root#./}/CreationsForge.Mcp"
@@ -458,7 +458,7 @@ jobs:
                   mkdir -p ./artifacts/publish/arch/desktop
                   mkdir -p ./artifacts/publish/arch/mcp
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
@@ -505,7 +505,7 @@ jobs:
 
                   cat > "$launcher_dir/creationsforge" <<'EOF'
                   #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+                  exec /opt/CreationsForge/Desktop/CreationsForgeWorkbench "$@"
                   EOF
 
                   cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
@@ -515,7 +515,7 @@ jobs:
 
                   chmod +x "$launcher_dir/creationsforge"
                   chmod +x "$launcher_dir/creationsforge-mcp"
-                  chmod +x "$desktop_app/CreationsForge"
+                  chmod +x "$desktop_app/CreationsForgeWorkbench"
                   chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
@@ -549,7 +549,7 @@ jobs:
 
                   test -x "$validation_root/usr/bin/creationsforge"
                   test -x "$validation_root/usr/bin/creationsforge-mcp"
-                  test -x "$validation_root/opt/CreationsForge/Desktop/CreationsForge"
+                  test -x "$validation_root/opt/CreationsForge/Desktop/CreationsForgeWorkbench"
                   test -x "$validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
 
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${validation_root#./}/opt/CreationsForge/Mcp/CreationsForge.Mcp"
@@ -623,7 +623,7 @@ jobs:
                   mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
                   mkdir -p "$desktop_publish_root" "$mcp_publish_root"
 
-                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
                     --configuration Release \
                     --runtime "$PACKAGE_RID" \
                     --self-contained true \
@@ -662,7 +662,7 @@ jobs:
                   cp ./Documentation/ROADMAP.md "$mcp_publish_root/"
                   cp ./CHANGELOG.md "$mcp_publish_root/"
 
-                  chmod +x "$contents_root/MacOS/CreationsForge"
+                  chmod +x "$contents_root/MacOS/CreationsForgeWorkbench"
                   chmod +x "$mcp_publish_root/CreationsForge.Mcp"
                   plutil -replace CFBundleShortVersionString -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
                   plutil -replace CFBundleVersion -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
@@ -684,7 +684,7 @@ jobs:
                   ditto -x -k "$desktop_archive" "$desktop_validation_root"
                   tar -C "$mcp_validation_root" -xzf "$mcp_archive"
 
-                  desktop_executable="$desktop_validation_root/CreationsForge.app/Contents/MacOS/CreationsForge"
+                  desktop_executable="$desktop_validation_root/CreationsForge.app/Contents/MacOS/CreationsForgeWorkbench"
                   mcp_executable="$mcp_validation_root/CreationsForge.Mcp"
                   test -x "$desktop_executable"
                   test -x "$mcp_executable"
