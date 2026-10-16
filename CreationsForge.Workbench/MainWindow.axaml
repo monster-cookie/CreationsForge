@@ -12,7 +12,7 @@
     <StackPanel Margin="24" Spacing="16">
       <StackPanel Spacing="4">
         <TextBlock FontSize="26" FontWeight="Bold">MCP Workbench</TextBlock>
-        <TextBlock TextWrapping="Wrap">A standalone developer shell for the production CreationsForge MCP host. Select every input explicitly before connecting.</TextBlock>
+        <TextBlock TextWrapping="Wrap">A standalone developer shell for the production CreationsForge MCP host. Selections are remembered, and the MCP executable and game Data directory are filled in when they can be found.</TextBlock>
       </StackPanel>
 
       <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">

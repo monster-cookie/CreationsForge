@@ -181,6 +181,56 @@ public sealed partial class PluginWorkspaceTests
         Assert.Equal(outputModKey, reopened.Output.ModKey);
     }
 
+    /// <summary>Removes the output sidecar lock on close and leaves source plugins in place.</summary>
+    [Fact]
+    public void ClosingWorkspaceRemovesTheOutputLockFileAndKeepsSourcePlugins()
+    {
+        using var directory = new TemporaryDirectory();
+        var sourceModKey = ModKey.FromNameAndExtension("Base.esm");
+        var sourcePath = Path.Combine(directory.Path, sourceModKey.ToString());
+        WriteEmptyPlugin(sourcePath, sourceModKey, GameRelease.Fallout4);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        var outputPath = Path.Combine(directory.Path, outputModKey.ToString());
+        var sidecar = outputPath + ".creationsforge.lock";
+
+        var workspace = CreateFactory().Open(
+            CreateNewRequest(directory.Path, GameRelease.Fallout4, [sourceModKey], outputModKey));
+        Assert.True(File.Exists(sidecar));
+        Assert.False(File.Exists(sourcePath + ".creationsforge.lock"));
+        workspace.Dispose();
+
+        Assert.False(File.Exists(sidecar));
+        Assert.True(File.Exists(sourcePath));
+        Assert.False(File.Exists(outputPath));
+    }
+
+    /// <summary>Removes the sidecar for an existing output and does not delete that plugin.</summary>
+    [Fact]
+    public void ClosingAnExistingOutputRemovesOnlyTheSidecarLock()
+    {
+        using var directory = new TemporaryDirectory();
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        var outputPath = Path.Combine(directory.Path, outputModKey.ToString());
+        WriteEmptyPlugin(outputPath, outputModKey, GameRelease.Fallout4);
+        var sidecar = outputPath + ".creationsforge.lock";
+        var definition = new PluginOutputDefinition(
+            outputPath,
+            outputModKey,
+            MasterStyle.Full,
+            PluginTextStorageMode.Embedded,
+            createNew: false);
+        var request = new PluginWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], definition);
+
+        using (var workspace = CreateFactory().Open(request))
+        {
+            Assert.True(File.Exists(sidecar));
+            Assert.Equal(outputModKey, workspace.Output.ModKey);
+        }
+
+        Assert.False(File.Exists(sidecar));
+        Assert.True(File.Exists(outputPath));
+    }
+
     /// <summary>Prevents a source held for reading from being reopened as somebody else's mutable output.</summary>
     [Fact]
     public void SourceOwnershipBlocksWritersAndReleasesOnClose()

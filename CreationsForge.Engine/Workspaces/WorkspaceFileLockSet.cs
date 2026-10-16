@@ -123,12 +123,13 @@ internal sealed class WorkspaceFileLockSet : IDisposable
 internal sealed class WorkspaceFileLockRequest
 {
     /// <summary>Initializes a file-lock request.</summary>
-    public WorkspaceFileLockRequest(string path, string purpose, bool isShared, bool createIfMissing)
+    public WorkspaceFileLockRequest(string path, string purpose, bool isShared, bool createIfMissing, bool deleteOnRelease = false)
     {
         Path = path;
         Purpose = purpose;
         IsShared = isShared;
         CreateIfMissing = createIfMissing;
+        DeleteOnRelease = deleteOnRelease;
     }
 
     /// <summary>Gets the absolute target path.</summary>
@@ -142,6 +143,10 @@ internal sealed class WorkspaceFileLockRequest
 
     /// <summary>Gets whether an absent target should be created.</summary>
     public bool CreateIfMissing { get; }
+
+    /// <summary>Gets whether the target file is removed after its handle is closed.</summary>
+    /// <remarks>Output identity sidecars use this so a closed workspace does not leave a lock file behind.</remarks>
+    public bool DeleteOnRelease { get; }
 }
 
 /// <summary>Owns one open handle and its Unix advisory lock, when applicable.</summary>
@@ -154,12 +159,14 @@ internal sealed class WorkspaceFileLock : IDisposable
 
     private readonly FileStream _stream;
     private readonly bool _hasUnixLock;
+    private readonly string? _deletePath;
     private bool _disposed;
 
-    private WorkspaceFileLock(FileStream stream, bool hasUnixLock)
+    private WorkspaceFileLock(FileStream stream, bool hasUnixLock, string? deletePath)
     {
         _stream = stream;
         _hasUnixLock = hasUnixLock;
+        _deletePath = deletePath;
     }
 
     /// <summary>Acquires one file handle and its platform-specific ownership lock without waiting.</summary>
@@ -184,7 +191,7 @@ internal sealed class WorkspaceFileLock : IDisposable
                 }
             }
 
-            return new WorkspaceFileLock(stream, !OperatingSystem.IsWindows());
+            return new WorkspaceFileLock(stream, !OperatingSystem.IsWindows(), request.DeleteOnRelease ? request.Path : null);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -210,6 +217,19 @@ internal sealed class WorkspaceFileLock : IDisposable
         }
 
         _stream.Dispose();
+        if (_deletePath is null)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(_deletePath);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The handle is already closed. A sidecar that cannot be removed is no longer an ownership lock.
+        }
     }
 
     private static class UnixFileLockApi

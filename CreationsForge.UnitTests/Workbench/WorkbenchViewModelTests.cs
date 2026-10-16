@@ -10,7 +10,7 @@ public sealed class WorkbenchViewModelTests
     [Fact]
     public async Task ConnectWithMissingExecutableLeavesUsableDisconnectedState()
     {
-        var viewModel = new WorkbenchViewModel
+        var viewModel = new WorkbenchViewModel(static async (path, token) => await StdioMcpClient.StartAsync(path, token).ConfigureAwait(false))
         {
             McpExecutablePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing.dll"),
         };
@@ -31,7 +31,10 @@ public sealed class WorkbenchViewModelTests
         await File.WriteAllTextAsync(path, "not an executable", TestContext.Current.CancellationToken);
         try
         {
-            var viewModel = new WorkbenchViewModel { McpExecutablePath = path };
+            var viewModel = new WorkbenchViewModel(static async (executable, token) => await StdioMcpClient.StartAsync(executable, token).ConfigureAwait(false))
+            {
+                McpExecutablePath = path,
+            };
 
             await viewModel.ConnectAsync();
 

@@ -72,7 +72,7 @@ public sealed class PluginWorkspaceFactory
         var lockRequests = sourceClosure
             .Select(plugin => new WorkspaceFileLockRequest(plugin.Path, $"source plugin '{plugin.ModKey}'", isShared: true, createIfMissing: false))
             .ToList();
-        lockRequests.Add(new WorkspaceFileLockRequest(outputPath + OutputLockSuffix, $"output identity '{request.Output.ModKey}'", isShared: false, createIfMissing: true));
+        lockRequests.Add(new WorkspaceFileLockRequest(outputPath + OutputLockSuffix, $"output identity '{request.Output.ModKey}'", isShared: false, createIfMissing: true, deleteOnRelease: true));
         var outputStampBeforeOpen = request.Output.CreateNew
             ? null
             : _persistenceBackend.CaptureStamp(request.Output.ModKey, outputPath);

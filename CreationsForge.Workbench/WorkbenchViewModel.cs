@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
+using CreationsForge.Engine.Installs;
 using Serilog;
 
 namespace CreationsForge.Workbench;
@@ -9,9 +10,24 @@ namespace CreationsForge.Workbench;
 public sealed class WorkbenchViewModel : INotifyPropertyChanged
 {
     private static readonly System.Text.Json.JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
+    private static readonly HashSet<string> TrackedSettings = new(StringComparer.Ordinal)
+    {
+        nameof(McpExecutablePath),
+        nameof(DataDirectory),
+        nameof(SelectedPlugins),
+        nameof(OutputPath),
+        nameof(MasterStyle),
+        nameof(TextStorageMode),
+        nameof(Language),
+    };
     private readonly Func<string, CancellationToken, Task<IWorkbenchMcpSession>> _startSession;
+    private readonly IWorkbenchSettingsStore? _settings;
+    private readonly Func<string?>? _findMcpExecutable;
+    private readonly Func<string, string?>? _findDataDirectory;
+    private readonly Dictionary<string, WorkbenchReleaseSettings> _profiles = new(StringComparer.Ordinal);
     private readonly SynchronizationContext? _uiContext;
     private readonly object _state = new();
+    private bool _applyingSettings;
     private IWorkbenchMcpSession? _client;
     private CancellationTokenSource? _activeCancellation;
     private TaskCompletionSource? _operationCompleted;
@@ -32,19 +48,45 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     private bool _busy;
     private bool _closing;
 
-    /// <summary>Creates a view model that launches the production MCP executable.</summary>
+    /// <summary>Creates a view model that launches the production MCP executable and remembers selections.</summary>
     public WorkbenchViewModel()
-        : this(static async (path, token) => await StdioMcpClient.StartAsync(path, token).ConfigureAwait(false))
+        : this(
+            static async (path, token) => await StdioMcpClient.StartAsync(path, token).ConfigureAwait(false),
+            new WorkbenchSettingsStore(),
+            WorkbenchExecutableLocator.Find,
+            InstalledGameData.TryGetDirectory)
     {
     }
 
     /// <summary>Creates a view model that starts sessions through a caller-supplied factory.</summary>
     /// <param name="startSession">Starts one MCP session for an executable path. Canceled startup must not leave a running child.</param>
+    /// <remarks>This constructor does not read or write <c>CreationsForge.Config.json</c>.</remarks>
     internal WorkbenchViewModel(Func<string, CancellationToken, Task<IWorkbenchMcpSession>> startSession)
+        : this(startSession, settings: null, findMcpExecutable: null, findDataDirectory: null)
+    {
+    }
+
+    /// <summary>Creates a view model with explicit session startup and settings dependencies.</summary>
+    /// <param name="startSession">Starts one MCP session for an executable path. Canceled startup must not leave a running child.</param>
+    /// <param name="settings">The settings cache. <see langword="null"/> keeps every selection in memory for the process only.</param>
+    /// <param name="findMcpExecutable">Supplies an MCP host when the saved path is empty or missing.</param>
+    /// <param name="findDataDirectory">Supplies an installed Data directory for a release whose saved directory is empty or missing.</param>
+    internal WorkbenchViewModel(
+        Func<string, CancellationToken, Task<IWorkbenchMcpSession>> startSession,
+        IWorkbenchSettingsStore? settings,
+        Func<string?>? findMcpExecutable,
+        Func<string, string?>? findDataDirectory)
     {
         ArgumentNullException.ThrowIfNull(startSession);
         _startSession = startSession;
+        _settings = settings;
+        _findMcpExecutable = findMcpExecutable;
+        _findDataDirectory = findDataDirectory;
         _uiContext = SynchronizationContext.Current;
+        if (settings is not null)
+        {
+            ApplyLoadedSettings(settings.Load());
+        }
     }
 
     /// <summary>Raised when a bound property changes.</summary>
@@ -99,17 +141,33 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <summary>Gets or sets the explicit output plugin path.</summary>
     public string OutputPath { get => _outputPath; set => Set(ref _outputPath, value); }
 
-    /// <summary>Gets or sets the selected game release.</summary>
-    public string Release { get => _release; set => Set(ref _release, value); }
+    /// <summary>Gets or sets the selected game release. Each release keeps its own directory, plugins, and output.</summary>
+    public string Release
+    {
+        get => _release;
+        set => ChangeRelease(value);
+    }
 
     /// <summary>Gets or sets the requested output master style.</summary>
-    public string MasterStyle { get => _masterStyle; set => Set(ref _masterStyle, value); }
+    public string MasterStyle
+    {
+        get => _masterStyle;
+        set => Set(ref _masterStyle, NormalizeChoice(value, MasterStyles, "Full"));
+    }
 
     /// <summary>Gets or sets the requested output text storage mode.</summary>
-    public string TextStorageMode { get => _textStorageMode; set => Set(ref _textStorageMode, value); }
+    public string TextStorageMode
+    {
+        get => _textStorageMode;
+        set => Set(ref _textStorageMode, NormalizeChoice(value, TextStorageModes, "Embedded"));
+    }
 
     /// <summary>Gets or sets the active translated-string language sent to output tools.</summary>
-    public string Language { get => _language; set => Set(ref _language, value); }
+    public string Language
+    {
+        get => _language;
+        set => Set(ref _language, NormalizeChoice(value, Languages, "English"));
+    }
 
     /// <summary>Gets the short connection state shown beside the controls.</summary>
     public string Status { get => _status; private set => Set(ref _status, value); }
@@ -701,6 +759,207 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
 
         field = value;
         OnPropertyChanged(propertyName);
+        if (!_applyingSettings && propertyName is not null && TrackedSettings.Contains(propertyName))
+        {
+            Persist();
+        }
+    }
+
+    /// <summary>Restores saved selections and fills an MCP host or Data directory that is still blank or missing.</summary>
+    /// <param name="state">The settings read from <c>CreationsForge.Config.json</c>.</param>
+    private void ApplyLoadedSettings(WorkbenchSettingsState state)
+    {
+        _applyingSettings = true;
+        try
+        {
+            _profiles.Clear();
+            foreach (var pair in state.Releases)
+            {
+                _profiles[pair.Key] = CopyRelease(pair.Value);
+            }
+
+            var release = NormalizeChoice(state.Release, Releases, "Starfield");
+            if (!string.Equals(_release, release, StringComparison.Ordinal))
+            {
+                _release = release;
+                OnPropertyChanged(nameof(Release));
+            }
+
+            Language = NormalizeChoice(state.Language, Languages, "English");
+            McpExecutablePath = ResolveMcpPath(state.McpExecutablePath);
+            ApplyProfileFields(release);
+            EnsureDataDirectory();
+        }
+        finally
+        {
+            _applyingSettings = false;
+        }
+
+        Persist();
+    }
+
+    /// <summary>Stores the current release profile, then shows the profile for <paramref name="value"/>.</summary>
+    /// <param name="value">The release selected in the shell.</param>
+    private void ChangeRelease(string? value)
+    {
+        var normalized = NormalizeChoice(value, Releases, "Starfield");
+        if (string.Equals(_release, normalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!_applyingSettings)
+        {
+            RememberCurrentProfile();
+        }
+
+        _applyingSettings = true;
+        try
+        {
+            _release = normalized;
+            OnPropertyChanged(nameof(Release));
+            ApplyProfileFields(normalized);
+            EnsureDataDirectory();
+        }
+        finally
+        {
+            _applyingSettings = false;
+        }
+
+        Persist();
+    }
+
+    /// <summary>Copies one release profile into the bound fields.</summary>
+    /// <param name="release">The release whose profile should become visible.</param>
+    private void ApplyProfileFields(string release)
+    {
+        if (!_profiles.TryGetValue(release, out var profile))
+        {
+            profile = new WorkbenchReleaseSettings();
+            _profiles[release] = profile;
+        }
+
+        DataDirectory = profile.DataDirectory;
+        SelectedPlugins = profile.SelectedPlugins;
+        OutputPath = profile.OutputPath;
+        MasterStyle = profile.MasterStyle;
+        TextStorageMode = profile.TextStorageMode;
+    }
+
+    /// <summary>Fills the Data directory when the current release does not already point at a directory.</summary>
+    private void EnsureDataDirectory()
+    {
+        if (!string.IsNullOrWhiteSpace(_dataDirectory) && Directory.Exists(_dataDirectory))
+        {
+            return;
+        }
+
+        var found = _findDataDirectory?.Invoke(_release);
+        if (string.IsNullOrWhiteSpace(found) || !Directory.Exists(found))
+        {
+            return;
+        }
+
+        Log.ForContext<WorkbenchViewModel>().Information(
+            "Using installed Data directory {DataDirectory} for {Release}.",
+            found,
+            _release);
+        DataDirectory = found;
+    }
+
+    /// <summary>Keeps a saved MCP path that still exists. Otherwise uses the located host.</summary>
+    /// <param name="saved">The path stored in the configuration file.</param>
+    /// <returns>The path the shell should show.</returns>
+    private string ResolveMcpPath(string? saved)
+    {
+        if (!string.IsNullOrWhiteSpace(saved) && File.Exists(saved))
+        {
+            return saved;
+        }
+
+        var found = _findMcpExecutable?.Invoke();
+        if (string.IsNullOrWhiteSpace(found) || !File.Exists(found))
+        {
+            return saved ?? string.Empty;
+        }
+
+        Log.ForContext<WorkbenchViewModel>().Information("Using MCP executable {ExecutablePath}.", found);
+        return found;
+    }
+
+    /// <summary>Writes the visible selections when a settings store is attached.</summary>
+    private void Persist()
+    {
+        if (_settings is null || _applyingSettings)
+        {
+            return;
+        }
+
+        RememberCurrentProfile();
+        try
+        {
+            _settings.Save(ToState());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Log.ForContext<WorkbenchViewModel>().Warning(exception, "Could not save Workbench settings.");
+        }
+    }
+
+    /// <summary>Copies the visible release fields into the profile map.</summary>
+    private void RememberCurrentProfile()
+    {
+        _profiles[_release] = new WorkbenchReleaseSettings
+        {
+            DataDirectory = _dataDirectory,
+            SelectedPlugins = _selectedPlugins,
+            OutputPath = _outputPath,
+            MasterStyle = _masterStyle,
+            TextStorageMode = _textStorageMode,
+        };
+    }
+
+    /// <summary>Copies the profile map into the object the settings store saves.</summary>
+    /// <returns>The current selections.</returns>
+    private WorkbenchSettingsState ToState()
+    {
+        var state = new WorkbenchSettingsState
+        {
+            Release = _release,
+            Language = _language,
+            McpExecutablePath = _mcpExecutablePath,
+        };
+        foreach (var pair in _profiles)
+        {
+            state.Releases[pair.Key] = CopyRelease(pair.Value);
+        }
+
+        return state;
+    }
+
+    /// <summary>Copies one release profile so a later edit does not change a saved snapshot.</summary>
+    /// <param name="source">The profile to copy.</param>
+    /// <returns>A separate profile with the same selections.</returns>
+    private static WorkbenchReleaseSettings CopyRelease(WorkbenchReleaseSettings source)
+    {
+        return new WorkbenchReleaseSettings
+        {
+            DataDirectory = source.DataDirectory,
+            SelectedPlugins = source.SelectedPlugins,
+            OutputPath = source.OutputPath,
+            MasterStyle = source.MasterStyle,
+            TextStorageMode = source.TextStorageMode,
+        };
+    }
+
+    /// <summary>Returns <paramref name="value"/> when it is one of <paramref name="allowed"/>; otherwise <paramref name="fallback"/>.</summary>
+    /// <param name="value">The stored or selected value.</param>
+    /// <param name="allowed">The exact names the MCP host accepts.</param>
+    /// <param name="fallback">The value used when <paramref name="value"/> is not one of those names.</param>
+    /// <returns>A name the shell can send to the MCP host.</returns>
+    private static string NormalizeChoice(string? value, IReadOnlyList<string> allowed, string fallback)
+    {
+        return value is not null && allowed.Contains(value, StringComparer.Ordinal) ? value : fallback;
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
