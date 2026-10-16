@@ -230,22 +230,134 @@ public sealed class WorkbenchViewModelTests
             call => call.Tool == "workspace_close" && call.Arguments.Contains("\"discardUnsaved\":true", StringComparison.Ordinal));
     }
 
-    /// <summary>Records tool calls made by the view model without starting a process.</summary>
-    private sealed class FakeWorkbenchSession : IWorkbenchMcpSession
+    /// <summary>Cancel stops the active tool call and leaves the connected host in place.</summary>
+    [Fact]
+    public async Task CancelDuringToolCallLeavesTheSessionConnected()
     {
-        public string ServerVersion { get; } = "test";
+        var session = new FakeWorkbenchSession { WaitForCancel = true, CallEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        var viewModel = new WorkbenchViewModel((_, _) => Task.FromResult<IWorkbenchMcpSession>(session))
+        {
+            DataDirectory = Path.GetTempPath(),
+        };
+        session.Tools =
+        [
+            new WorkbenchMcpTool("workspace_open", "Opens a workspace", new JsonObject { ["type"] = "object" }),
+        ];
 
+        await viewModel.ConnectAsync();
+        var open = viewModel.OpenWorkspaceAsync();
+        await session.CallEntered.Task;
+        Assert.True(viewModel.CanCancel);
+        Assert.Contains("Opening workspace", viewModel.ActivityText, StringComparison.Ordinal);
+
+        await viewModel.CancelAsync();
+        await open;
+
+        Assert.False(session.Disposed);
+        Assert.True(viewModel.CanDisconnect);
+        Assert.False(viewModel.CanCancel);
+        Assert.False(viewModel.HasActivity);
+        Assert.Contains("canceled", viewModel.Status, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("workspace_open", Assert.Single(viewModel.DiscoveredTools).Name);
+        await viewModel.CloseAsync();
+    }
+
+    /// <summary>A bounded tool call reports a timeout and keeps the host connected.</summary>
+    [Fact]
+    public async Task ToolCallTimeoutLeavesTheSessionConnected()
+    {
+        var session = new FakeWorkbenchSession { WaitForCancel = true };
+        var viewModel = new WorkbenchViewModel(
+            (_, _) => Task.FromResult<IWorkbenchMcpSession>(session),
+            settings: null,
+            findMcpExecutable: null,
+            findDataDirectory: null,
+            connectTimeout: TimeSpan.FromSeconds(2),
+            operationTimeout: TimeSpan.FromMilliseconds(200))
+        {
+            DataDirectory = Path.GetTempPath(),
+        };
+
+        await viewModel.ConnectAsync();
+        await viewModel.OpenWorkspaceAsync();
+
+        Assert.False(session.Disposed);
+        Assert.True(viewModel.CanDisconnect);
+        Assert.Contains("timed out", viewModel.Status, StringComparison.OrdinalIgnoreCase);
+        await viewModel.CloseAsync();
+    }
+
+    /// <summary>An unexpected host exit clears the session and leaves Connect available.</summary>
+    [Fact]
+    public async Task HostExitClearsTheSessionAndAllowsReconnect()
+    {
+        var first = new FakeWorkbenchSession();
+        var second = new FakeWorkbenchSession
+        {
+            Tools = [new WorkbenchMcpTool("server_info", "Host identity", new JsonObject { ["type"] = "object" })],
+        };
+        var sessions = new Queue<IWorkbenchMcpSession>([first, second]);
+        var viewModel = new WorkbenchViewModel((_, _) => Task.FromResult(sessions.Dequeue()))
+        {
+            DataDirectory = Path.GetTempPath(),
+        };
+
+        await viewModel.ConnectAsync();
+        await viewModel.OpenWorkspaceAsync();
+        first.RaiseHostExited();
+        var disconnected = await WaitUntilAsync(() => viewModel.CanConnect && viewModel.Status.Contains("exited", StringComparison.OrdinalIgnoreCase));
+        Assert.True(disconnected);
+        Assert.True(first.Disposed);
+        Assert.Empty(viewModel.DiscoveredTools);
+
+        await viewModel.ConnectAsync();
+        await viewModel.OpenWorkspaceAsync();
+
+        Assert.Equal("server_info", Assert.Single(viewModel.DiscoveredTools).Name);
+        Assert.Contains("workspace_open", Assert.Single(second.Calls).Tool, StringComparison.Ordinal);
+        Assert.DoesNotContain(first.Calls.Skip(1), call => call.Tool == "workspace_open");
+        await viewModel.CloseAsync();
+        Assert.True(second.Disposed);
+    }
+
+    private static async Task<bool> WaitUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition())
+            {
+                return true;
+            }
+
+            await Task.Delay(20);
+        }
+
+        return condition();
+    }
+
+    /// <summary>Records tool calls made by the view model without starting a process.</summary>
+    private sealed class FakeWorkbenchSession : WorkbenchSessionDouble
+    {
         public List<(string Tool, string Arguments)> Calls { get; } = [];
 
         public HashSet<string> FailTools { get; } = [];
 
-        public bool Disposed { get; private set; }
+        public TaskCompletionSource? CallEntered { get; set; }
+
+        public bool WaitForCancel { get; set; }
 
         private string? _outputPath;
 
-        public Task<JsonObject> CallAsync(string tool, JsonObject arguments, CancellationToken cancellationToken)
+        public override async Task<JsonObject> CallAsync(string tool, JsonObject arguments, CancellationToken cancellationToken)
         {
             Calls.Add((tool, arguments.ToJsonString()));
+            CallEntered?.TrySetResult();
+            if (WaitForCancel)
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             if (FailTools.Contains(tool))
             {
@@ -257,20 +369,29 @@ public sealed class WorkbenchViewModelTests
                 _outputPath = path;
             }
 
-            var content = new JsonObject { ["workspaceId"] = "session-1" };
+            var content = new JsonObject
+            {
+                ["workspaceId"] = "session-1",
+                ["revision"] = 0,
+            };
             if (tool == "workspace_save")
             {
                 content["status"] = "Succeeded";
                 content["destinationPath"] = _outputPath;
             }
 
-            return Task.FromResult(new JsonObject { ["structuredContent"] = content });
-        }
+            if (tool == "workspace_close")
+            {
+                WorkspaceId = null;
+                Revision = null;
+            }
+            else
+            {
+                WorkspaceId = "session-1";
+                Revision = 0;
+            }
 
-        public ValueTask DisposeAsync()
-        {
-            Disposed = true;
-            return ValueTask.CompletedTask;
+            return new JsonObject { ["structuredContent"] = content };
         }
     }
 }
