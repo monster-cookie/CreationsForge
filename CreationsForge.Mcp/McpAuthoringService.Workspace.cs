@@ -291,7 +291,12 @@ public sealed partial class McpAuthoringService
                 ToModKeys(session.SelectedPlugins),
                 CreateOutput(outputPath, masterStyle, textStorageMode, language, createNew));
             opened = _factory.Open(request);
-            _sessions.CompleteOutput(session, opened);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!_sessions.CompleteOutput(session, opened))
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+
             opened = null;
             return McpToolResults.Success(McpAuthoringProjection.State(session));
         }

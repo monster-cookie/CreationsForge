@@ -161,7 +161,8 @@ public sealed partial class PluginWorkspaceTests
         var service = new McpAuthoringService([], new PluginWorkspaceFactory([]), sessions, new McpOperationReplay());
         var session = new McpAuthoringSession("review-session", GameRelease.Starfield, directory, []);
         Assert.Null(sessions.TryCreate(session));
-        sessions.CompleteOutput(session, workspace);
+        Assert.Null(sessions.TryBeginOutput(session.Id, out _));
+        Assert.True(sessions.CompleteOutput(session, workspace));
         return (service, session.Id);
     }
 

@@ -61,6 +61,16 @@ dotnet .\CreationsForge.Mcp\bin\Release\net10.0\CreationsForge.Mcp.dll
 
 This starts a protocol server, not an interactive shell. Protocol messages use standard input and output; diagnostics use standard error. The executable rejects command-line arguments with exit code 2.
 
+## MCP Workbench
+
+The standalone Workbench provides a human-launchable desktop shell around the production MCP executable. It keeps the executable, game release, source data directory, selected plugins, output path, master style, text storage, and language explicit; connection and workspace failures remain visible in the diagnostics panel. Build it with the solution and launch `CreationsForge.Workbench\bin\Release\net10.0\CreationsForgeWorkbench.exe`. A saved MCP executable is reused, and a blank one is filled from the installed `Mcp` folder or the development build beside the Workbench. A blank or missing Data directory is filled from the installed game for the selected release. The final Creations Forge GUI keeps the executable name `CreationsForge.exe` and will later add a setting and button that launches this Workbench. That entry is not part of the standalone shell. A missing executable or failed startup leaves the shell disconnected and usable. Disconnect and window close cancel the active call, stop the Workbench-owned child process, and remove the output sidecar lock file (`<plugin>.creationsforge.lock`). The plugin file stays. A killed process can leave that sidecar behind. The operating-system lock ends when the process exits, and the next close of a workspace that opens the same output removes the file.
+
+The initial shell supports MCP initialization, workspace open, new output, existing output, disconnect, and responsive close. Create output calls `output_create` and then `workspace_save`, so the new plugin file is written to the selected path. Open output attaches a plugin that already exists and does not rewrite it. A second create or open stays disabled while that session has an output attached. It deliberately does not duplicate engine or record state; subsequent authoring controls will call the discovered production MCP tools through the same child process.
+
+The Workbench writes a Serilog file and shows its path above the diagnostics box. On Windows the preferred directory is `%ProgramData%\CreationsForge\Logs`. Other systems use `~/.CreationsForge/Logs`. Each launch creates `CreationsForgeWorkbench-*.log` and records connection, workspace, output, and MCP host stderr there. If that directory cannot be created, the file falls forward to the user or temporary logs directory.
+
+Selections are stored in the historical `CreationsForge.Config.json` file in the parent of that logs directory (`%ProgramData%\CreationsForge` on Windows, `~/.CreationsForge` otherwise). The file keeps earlier fields such as theme settings. Language and the MCP executable are shared. Each release remembers its own Data directory, source plugins, output path, master style, and text storage. If the preferred directory is not writable, the file falls forward to the user or temporary Creations Forge directory.
+
 ## Social Presence
 
 1. I can be found as Venpi hanging out in the Quarter Onion Games Discord server.
