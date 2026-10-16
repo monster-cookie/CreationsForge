@@ -11,7 +11,7 @@ public static class InstalledGameData
     /// <returns>The Data directory when Mutagen can locate that install; otherwise <see langword="null"/>.</returns>
     public static string? TryGetDirectory(string releaseName)
     {
-        if (!Enum.TryParse<GameRelease>(releaseName, ignoreCase: false, out var release))
+        if (!TryGetSupportedRelease(releaseName, out var release))
         {
             return null;
         }
@@ -29,6 +29,29 @@ public static class InstalledGameData
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    /// <summary>Accepts only the release names the production MCP host advertises.</summary>
+    /// <param name="releaseName">The candidate release name.</param>
+    /// <param name="release">The matching Mutagen release when the name is supported.</param>
+    /// <returns><see langword="true"/> for Starfield, Fallout 4, or Skyrim Special Edition.</returns>
+    private static bool TryGetSupportedRelease(string releaseName, out GameRelease release)
+    {
+        switch (releaseName)
+        {
+            case nameof(GameRelease.Starfield):
+                release = GameRelease.Starfield;
+                return true;
+            case nameof(GameRelease.Fallout4):
+                release = GameRelease.Fallout4;
+                return true;
+            case nameof(GameRelease.SkyrimSE):
+                release = GameRelease.SkyrimSE;
+                return true;
+            default:
+                release = default;
+                return false;
         }
     }
 }

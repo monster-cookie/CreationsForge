@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace CreationsForge.Mcp;
@@ -25,7 +26,17 @@ public static class McpHostRunner
 
         var builder = McpHostComposition.CreateProductionBuilder(GetServerVersion());
         using var host = builder.Build();
-        return await RunHostAsync(token => host.RunAsync(token), cancellationToken).ConfigureAwait(false);
+        var sessions = host.Services.GetRequiredService<Sessions.McpSessionRegistry>();
+        try
+        {
+            return await RunHostAsync(token => host.RunAsync(token), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // RunAsync disposes the host, so the registry must be captured before shutdown.
+            // The container does not dispose this caller-created singleton.
+            sessions.Dispose();
+        }
     }
 
     /// <summary>Runs a host and maps cancellation-requested shutdown to the documented process exit code.</summary>

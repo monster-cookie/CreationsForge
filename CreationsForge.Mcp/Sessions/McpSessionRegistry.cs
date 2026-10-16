@@ -4,10 +4,11 @@ using CreationsForge.Mcp.Protocol;
 namespace CreationsForge.Mcp.Sessions;
 
 /// <summary>Guards the one authoring session without holding its lock across save, discard, or dispose.</summary>
-internal sealed class McpSessionRegistry
+internal sealed class McpSessionRegistry : IDisposable
 {
     private readonly object _gate = new();
     private McpAuthoringSession? _session;
+    private bool _disposed;
 
     /// <summary>Creates the pending session when none exists.</summary>
     /// <param name="session">The created session when creation succeeds.</param>
@@ -99,21 +100,52 @@ internal sealed class McpSessionRegistry
 
     /// <summary>Attaches a successfully opened native workspace.</summary>
     /// <param name="session">The session that began opening.</param>
-    /// <param name="workspace">The native workspace.</param>
-    public void CompleteOutput(McpAuthoringSession session, PluginWorkspace workspace)
+    /// <param name="workspace">The native workspace. The caller still owns it when this method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> when the workspace is attached. <see langword="false"/> when shutdown or cancellation already owns the session and the caller must dispose <paramref name="workspace"/>.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when a different session is current and the host is not shutting down.</exception>
+    public bool CompleteOutput(McpAuthoringSession session, PluginWorkspace workspace)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(workspace);
         lock (_gate)
         {
-            if (!ReferenceEquals(_session, session))
+            if (_disposed || !ReferenceEquals(_session, session) || session.Phase != McpSessionPhase.Opening)
             {
-                throw new InvalidOperationException("The authoring session changed while output open was completing.");
+                if (!_disposed && !ReferenceEquals(_session, session))
+                {
+                    throw new InvalidOperationException("The authoring session changed while output open was completing.");
+                }
+
+                return false;
             }
 
             session.Workspace = workspace;
             session.Phase = McpSessionPhase.Open;
+            return true;
         }
+    }
+
+    /// <summary>Disposes an attached workspace and rejects any output open that finishes during shutdown.</summary>
+    public void Dispose()
+    {
+        PluginWorkspace? workspace;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            workspace = _session?.Workspace;
+            if (_session is not null)
+            {
+                _session.Workspace = null;
+                _session = null;
+            }
+        }
+
+        workspace?.Dispose();
     }
 
     /// <summary>Returns a failed output open to the pending phase.</summary>

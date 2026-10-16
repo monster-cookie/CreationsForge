@@ -10,6 +10,8 @@ public sealed class InstalledGameDataTests
     public void UnknownReleaseReturnsNull()
     {
         Assert.Null(InstalledGameData.TryGetDirectory("NotAGame"));
+        Assert.Null(InstalledGameData.TryGetDirectory("Oblivion"));
+        Assert.Null(InstalledGameData.TryGetDirectory("0"));
         Assert.Null(InstalledGameData.TryGetDirectory(string.Empty));
     }
 

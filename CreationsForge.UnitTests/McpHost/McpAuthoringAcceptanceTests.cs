@@ -129,6 +129,33 @@ public sealed class McpAuthoringAcceptanceTests
         await client.ShutdownAsync(timeout.Token);
     }
 
+    /// <summary>Deletes the output sidecar when the host exits on stdin EOF without an explicit workspace close.</summary>
+    [Fact]
+    public async Task ProductionHostDeletesOutputLockWhenStdinCloses()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var directory = new TestDirectory();
+        McpPluginFixtures.WriteStarfieldMaster(directory.DirectoryPath);
+        var outputPath = Path.Combine(directory.DirectoryPath, McpPluginFixtures.OutputPlugin);
+        var sidecar = outputPath + ".creationsforge.lock";
+        await using var client = await McpStdioClient.StartAsync(timeout.Token);
+
+        var opened = (await client.CallAsync(
+            McpAuthoringContract.WorkspaceOpenTool,
+            McpRequests.WorkspaceOpen("open-lock", "Starfield", directory.DirectoryPath),
+            timeout.Token)).RequireSuccess();
+        var created = (await client.CallAsync(
+            McpAuthoringContract.OutputCreateTool,
+            McpRequests.OutputCreate("create-lock", opened.RequiredString("workspaceId"), outputPath),
+            timeout.Token)).RequireSuccess();
+        Assert.True(created.RequiredBool("workspaceOpen"));
+        Assert.True(File.Exists(sidecar));
+
+        await client.ShutdownAsync(timeout.Token);
+
+        Assert.False(File.Exists(sidecar));
+    }
+
     /// <summary>Creates, overrides, replays, saves, and reopens a Starfield keyword through the production host.</summary>
     [Fact]
     public async Task ProductionHostRoundTripsKeywordCreateOverrideAndReopen()

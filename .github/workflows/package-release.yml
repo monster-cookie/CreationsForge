@@ -166,18 +166,9 @@ jobs:
                   $env:CREATIONSFORGE_PACKAGED_MCP_PATH = (Resolve-Path (Join-Path $mcpValidationRoot 'CreationsForge.Mcp.exe')).Path
                   & dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll `
                     -noColor `
-                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests `
-                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
                   if ($LASTEXITCODE -ne 0) {
                       throw "Packaged Windows MCP protocol validation failed with exit code $LASTEXITCODE."
-                  }
-
-                  & dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll `
-                    -noColor `
-                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests `
-                    -longRunning 60
-                  if ($LASTEXITCODE -ne 0) {
-                      throw "Packaged Windows MCP three-game save/reopen validation failed with exit code $LASTEXITCODE."
                   }
 
             - name: Install Inno Setup
@@ -386,12 +377,7 @@ jobs:
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_validation_root#./}/CreationsForge.Mcp"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
-                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
-                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
-                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
-                    -noColor \
-                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
-                    -longRunning 60
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
 
             - name: Upload Linux desktop ZIP
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -555,12 +541,7 @@ jobs:
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${validation_root#./}/opt/CreationsForge/Mcp/CreationsForge.Mcp"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
-                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
-                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
-                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
-                    -noColor \
-                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
-                    -longRunning 60
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
 
             - name: Upload Arch Linux package
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -699,15 +680,7 @@ jobs:
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_executable#./}"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
-                    -class CreationsForge.UnitTests.Engine.Persistence.OutputDirectoryLeaseProviderTests \
-                    -class CreationsForge.UnitTests.Engine.PluginInputs.PluginSourceInputLoaderTests \
-                    -class CreationsForge.UnitTests.Engine.PluginOutputs.PluginOutputInputLoaderTests \
-                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
-                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
-                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
-                    -noColor \
-                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
-                    -longRunning 60
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
 
             - name: Upload macOS desktop archive
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

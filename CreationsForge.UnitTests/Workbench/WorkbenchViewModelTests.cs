@@ -158,7 +158,8 @@ public sealed class WorkbenchViewModelTests
         await viewModel.OpenOutputAsync(createNew: true);
 
         Assert.Contains("Output operation failed", viewModel.Diagnostics, StringComparison.Ordinal);
-        Assert.DoesNotContain("Created", viewModel.Status, StringComparison.Ordinal);
+        Assert.Equal("Output operation failed.", viewModel.Status);
+        Assert.True(viewModel.CanCreateOutput);
         Assert.DoesNotContain(session.Calls, call => call.Tool == "workspace_save");
         var output = Assert.Single(session.Calls, call => call.Tool == "output_create");
         Assert.Contains("\"language\":\"French\"", output.Arguments, StringComparison.Ordinal);
@@ -201,6 +202,32 @@ public sealed class WorkbenchViewModelTests
 
         Assert.Equal(1, session.Calls.Count(call => call.Tool == "output_create"));
         Assert.Equal(1, session.Calls.Count(call => call.Tool == "workspace_save"));
+    }
+
+    /// <summary>Drops a created output when the following save is rejected, so the shell can open a workspace again.</summary>
+    [Fact]
+    public async Task CreateOutputSaveFailureReleasesTheWorkspace()
+    {
+        var session = new FakeWorkbenchSession();
+        var viewModel = new WorkbenchViewModel((_, _) => Task.FromResult<IWorkbenchMcpSession>(session))
+        {
+            DataDirectory = Path.GetTempPath(),
+            OutputPath = Path.Combine(Path.GetTempPath(), "CreationsForgeOutput.esm"),
+        };
+        session.FailTools.Add("workspace_save");
+
+        await viewModel.ConnectAsync();
+        await viewModel.OpenWorkspaceAsync();
+        await viewModel.OpenOutputAsync(createNew: true);
+
+        Assert.Equal("Output operation failed.", viewModel.Status);
+        Assert.Contains("Output operation failed", viewModel.Diagnostics, StringComparison.Ordinal);
+        Assert.True(viewModel.CanOpenWorkspace);
+        Assert.True(viewModel.CanEditSources);
+        Assert.False(viewModel.CanCreateOutput);
+        Assert.Contains(
+            session.Calls,
+            call => call.Tool == "workspace_close" && call.Arguments.Contains("\"discardUnsaved\":true", StringComparison.Ordinal));
     }
 
     /// <summary>Records tool calls made by the view model without starting a process.</summary>

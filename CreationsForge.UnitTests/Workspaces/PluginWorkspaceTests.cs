@@ -231,6 +231,29 @@ public sealed partial class PluginWorkspaceTests
         Assert.True(File.Exists(outputPath));
     }
 
+    /// <summary>Leaves no output sidecar when an earlier source lock cannot be acquired.</summary>
+    [Fact]
+    public void FailedSourceLockLeavesNoOutputSidecar()
+    {
+        using var directory = new TemporaryDirectory();
+        var sourceModKey = ModKey.FromNameAndExtension("Base.esm");
+        var sourcePath = Path.Combine(directory.Path, sourceModKey.ToString());
+        WriteEmptyPlugin(sourcePath, sourceModKey, GameRelease.Fallout4);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        var sidecar = Path.Combine(directory.Path, outputModKey + ".creationsforge.lock");
+        using var held = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        var requests = new[]
+        {
+            new WorkspaceFileLockRequest(sourcePath, $"source plugin '{sourceModKey}'", isShared: true, createIfMissing: false),
+            new WorkspaceFileLockRequest(sidecar, $"output identity '{outputModKey}'", isShared: false, createIfMissing: true, deleteOnRelease: true),
+        };
+
+        var exception = Assert.Throws<PluginWorkspaceLockException>(() => WorkspaceFileLockSet.Acquire(requests));
+
+        Assert.Contains("source plugin", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(sidecar));
+    }
+
     /// <summary>Prevents a source held for reading from being reopened as somebody else's mutable output.</summary>
     [Fact]
     public void SourceOwnershipBlocksWritersAndReleasesOnClose()

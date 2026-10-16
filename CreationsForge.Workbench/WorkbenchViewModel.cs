@@ -201,7 +201,10 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     public bool CanDisconnect => (_client is not null || _connecting) && !_closing;
 
     /// <summary>Gets whether the source release, data directory, and plugin list still apply to the next workspace open.</summary>
-    public bool CanEditSources => _workspaceId is null && !_closing;
+    public bool CanEditSources => !_connecting && !_busy && _workspaceId is null && !_closing;
+
+    /// <summary>Gets whether output path, master style, text storage, and language can change.</summary>
+    public bool CanEditOutput => !_connecting && !_busy && !_outputAttached && !_closing;
 
     /// <summary>Gets whether Open workspace can send <c>workspace_open</c>.</summary>
     public bool CanOpenWorkspace => _client is not null && _workspaceId is null && !_busy && !_closing;
@@ -333,13 +336,15 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 {
                     _activeCancellation = null;
                 }
-
-                _operationCompleted?.TrySetResult();
-                _operationCompleted = null;
             }
 
             timeout.Dispose();
             Publish(NotifyCommands);
+            lock (_state)
+            {
+                _operationCompleted?.TrySetResult();
+                _operationCompleted = null;
+            }
         }
     }
 
@@ -379,13 +384,15 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 {
                     _activeCancellation = null;
                 }
-
-                _operationCompleted?.TrySetResult();
-                _operationCompleted = null;
             }
 
             timeout.Dispose();
             Publish(NotifyCommands);
+            lock (_state)
+            {
+                _operationCompleted?.TrySetResult();
+                _operationCompleted = null;
+            }
         }
     }
 
@@ -455,12 +462,20 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         catch (OperationCanceledException)
         {
             Log.ForContext<WorkbenchViewModel>().Information("Workspace open was canceled.");
-            Publish(() => Diagnostics = "Workspace open canceled.");
+            Publish(() =>
+            {
+                Status = "Workspace open canceled.";
+                Diagnostics = "Workspace open canceled.";
+            });
         }
         catch (Exception exception)
         {
             Log.ForContext<WorkbenchViewModel>().Warning(exception, "Workspace open failed for {DataDirectory}.", DataDirectory);
-            Publish(() => Diagnostics = FormatError("Workspace open failed", exception));
+            Publish(() =>
+            {
+                Status = "Workspace open failed.";
+                Diagnostics = FormatError("Workspace open failed", exception);
+            });
         }
     }
 
@@ -470,14 +485,16 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         {
             string? workspaceId;
             var outputAttached = false;
+            var closing = false;
             lock (_state)
             {
                 workspaceId = _workspaceId;
                 outputAttached = _outputAttached;
+                closing = _closing;
             }
 
             var tool = createNew ? "output_create" : "output_open";
-            if (workspaceId is null || outputAttached || _closing)
+            if (workspaceId is null || outputAttached || closing)
             {
                 Log.ForContext<WorkbenchViewModel>().Warning("Skipped {Tool} because no pending workspace can accept an output.", tool);
                 return;
@@ -532,6 +549,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                     OutputPath,
                     saveStatus,
                     Truncate(save.ToJsonString(IndentedJson)));
+                await AbandonUnsavedOutputAsync().ConfigureAwait(false);
                 Publish(() =>
                 {
                     Status = "Output save failed.";
@@ -550,12 +568,62 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         catch (OperationCanceledException)
         {
             Log.ForContext<WorkbenchViewModel>().Information("Output operation was canceled for {OutputPath}.", OutputPath);
-            Publish(() => Diagnostics = "Output operation canceled.");
+            await AbandonUnsavedOutputAsync().ConfigureAwait(false);
+            Publish(() =>
+            {
+                Status = "Output operation canceled.";
+                Diagnostics = "Output operation canceled.";
+            });
         }
         catch (Exception exception)
         {
             Log.ForContext<WorkbenchViewModel>().Warning(exception, "Output operation failed for {OutputPath}.", OutputPath);
-            Publish(() => Diagnostics = FormatError("Output operation failed", exception));
+            await AbandonUnsavedOutputAsync().ConfigureAwait(false);
+            Publish(() =>
+            {
+                Status = "Output operation failed.";
+                Diagnostics = FormatError("Output operation failed", exception);
+            });
+        }
+    }
+
+    /// <summary>Closes a workspace whose new output was created but not saved, and returns the shell to a connected idle state.</summary>
+    private async Task AbandonUnsavedOutputAsync()
+    {
+        string? workspaceId;
+        lock (_state)
+        {
+            if (!_outputAttached)
+            {
+                return;
+            }
+
+            workspaceId = _workspaceId;
+            _outputAttached = false;
+            _workspaceId = null;
+        }
+
+        if (workspaceId is null)
+        {
+            return;
+        }
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await CallAsync("workspace_close", new JsonObject
+            {
+                ["operationId"] = "workbench-abandon-" + Guid.NewGuid().ToString("N"),
+                ["workspaceId"] = workspaceId,
+                ["discardUnsaved"] = true,
+            }, timeout.Token).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            Log.ForContext<WorkbenchViewModel>().Warning(
+                exception,
+                "Could not close workspace {WorkspaceId} after the new output was not saved.",
+                workspaceId);
         }
     }
 
@@ -733,6 +801,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanConnect));
         OnPropertyChanged(nameof(CanDisconnect));
         OnPropertyChanged(nameof(CanEditSources));
+        OnPropertyChanged(nameof(CanEditOutput));
         OnPropertyChanged(nameof(CanOpenWorkspace));
         OnPropertyChanged(nameof(CanCreateOutput));
         OnPropertyChanged(nameof(CanOpenOutput));
