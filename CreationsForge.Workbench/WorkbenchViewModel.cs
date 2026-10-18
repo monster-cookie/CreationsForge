@@ -1,4 +1,6 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using CreationsForge.Engine.Installs;
@@ -26,10 +28,16 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     private readonly Func<string, string?>? _findDataDirectory;
     private readonly Dictionary<string, WorkbenchReleaseSettings> _profiles = new(StringComparer.Ordinal);
     private readonly SynchronizationContext? _uiContext;
+    private readonly EventHandler _hostExitedHandler;
+    private readonly TimeSpan _connectTimeout;
+    private readonly TimeSpan _operationTimeout;
     private readonly object _state = new();
     private bool _applyingSettings;
     private IWorkbenchMcpSession? _client;
     private CancellationTokenSource? _activeCancellation;
+    private CancellationTokenSource? _userCancellation;
+    private CancellationTokenSource? _timeoutCancellation;
+    private CancellationTokenSource? _linkedCancellation;
     private TaskCompletionSource? _operationCompleted;
     private Task? _closeTask;
     private string _mcpExecutablePath = string.Empty;
@@ -42,11 +50,19 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     private string _language = "English";
     private string _status = "Disconnected";
     private string _diagnostics = "Select an MCP executable and connect to begin.";
+    private string _activityText = string.Empty;
+    private string _protocolVersion = string.Empty;
+    private string _serverName = string.Empty;
+    private string _selectedToolDescription = string.Empty;
+    private string _selectedToolSchema = string.Empty;
     private string? _workspaceId;
+    private WorkbenchMcpTool? _selectedTool;
+    private int _activityGeneration;
     private bool _outputAttached;
     private bool _connecting;
     private bool _busy;
     private bool _closing;
+    private bool _hostExitObserved;
 
     /// <summary>Creates a view model that launches the production MCP executable and remembers selections.</summary>
     public WorkbenchViewModel()
@@ -71,17 +87,24 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <param name="settings">The settings cache. <see langword="null"/> keeps every selection in memory for the process only.</param>
     /// <param name="findMcpExecutable">Supplies an MCP host when the saved path is empty or missing.</param>
     /// <param name="findDataDirectory">Supplies an installed Data directory for a release whose saved directory is empty or missing.</param>
+    /// <param name="connectTimeout">The limit for initialize and tool discovery. A non-positive value uses 15 seconds.</param>
+    /// <param name="operationTimeout">The limit for one workspace or output call. A non-positive value uses 30 seconds.</param>
     internal WorkbenchViewModel(
         Func<string, CancellationToken, Task<IWorkbenchMcpSession>> startSession,
         IWorkbenchSettingsStore? settings,
         Func<string?>? findMcpExecutable,
-        Func<string, string?>? findDataDirectory)
+        Func<string, string?>? findDataDirectory,
+        TimeSpan? connectTimeout = null,
+        TimeSpan? operationTimeout = null)
     {
         ArgumentNullException.ThrowIfNull(startSession);
         _startSession = startSession;
         _settings = settings;
         _findMcpExecutable = findMcpExecutable;
         _findDataDirectory = findDataDirectory;
+        _hostExitedHandler = OnHostExited;
+        _connectTimeout = Positive(connectTimeout, TimeSpan.FromSeconds(15));
+        _operationTimeout = Positive(operationTimeout, TimeSpan.FromSeconds(30));
         _uiContext = SynchronizationContext.Current;
         if (settings is not null)
         {
@@ -172,8 +195,64 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <summary>Gets the short connection state shown beside the controls.</summary>
     public string Status { get => _status; private set => Set(ref _status, value); }
 
-    /// <summary>Gets copyable diagnostics for the latest connection, workspace, or output result.</summary>
+    /// <summary>Gets copyable diagnostics for the latest connection, workspace, protocol, or tool result.</summary>
     public string Diagnostics { get => _diagnostics; private set => Set(ref _diagnostics, value); }
+
+    /// <summary>Gets the active phase and elapsed time, or an empty string when no call is waiting.</summary>
+    public string ActivityText => _activityText;
+
+    /// <summary>Gets whether <see cref="ActivityText"/> should be shown.</summary>
+    public bool HasActivity => _activityText.Length > 0;
+
+    /// <summary>Gets the tools and schemas discovered from the connected host.</summary>
+    public ObservableCollection<WorkbenchMcpTool> DiscoveredTools { get; } = [];
+
+    /// <summary>Gets a short description of the negotiated protocol and discovered tool count.</summary>
+    public string DiscoverySummary
+    {
+        get
+        {
+            if (DiscoveredTools.Count == 0)
+            {
+                return "Connect to discover the production tools and their schemas.";
+            }
+
+            var noun = DiscoveredTools.Count == 1 ? "tool" : "tools";
+            return $"{DiscoveredTools.Count} {noun} from {_serverName} MCP {_protocolVersion}.";
+        }
+    }
+
+    /// <summary>Gets or sets the discovered tool whose schema is shown.</summary>
+    public WorkbenchMcpTool? SelectedTool
+    {
+        get => _selectedTool;
+        set
+        {
+            if (ReferenceEquals(_selectedTool, value))
+            {
+                return;
+            }
+
+            _selectedTool = value;
+            OnPropertyChanged();
+            SelectedToolDescription = value?.Description ?? string.Empty;
+            SelectedToolSchema = value?.InputSchemaJson ?? string.Empty;
+        }
+    }
+
+    /// <summary>Gets the description of <see cref="SelectedTool"/>, or an empty string when none is selected.</summary>
+    public string SelectedToolDescription
+    {
+        get => _selectedToolDescription;
+        private set => Set(ref _selectedToolDescription, value);
+    }
+
+    /// <summary>Gets the indented input schema of <see cref="SelectedTool"/>, or an empty string when none is selected.</summary>
+    public string SelectedToolSchema
+    {
+        get => _selectedToolSchema;
+        private set => Set(ref _selectedToolSchema, value);
+    }
 
     /// <summary>Gets the active log file path, or the reason file logging could not start.</summary>
     public string LogFilePath
@@ -195,10 +274,13 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     public bool HasLogFile => LogFilePath.Length > 0;
 
     /// <summary>Gets whether Connect can start a new child process.</summary>
-    public bool CanConnect => _client is null && !_connecting && !_closing;
+    public bool CanConnect => _client is null && !_connecting && !_closing && !_hostExitObserved;
 
     /// <summary>Gets whether Disconnect can cancel startup or stop the current child.</summary>
     public bool CanDisconnect => (_client is not null || _connecting) && !_closing;
+
+    /// <summary>Gets whether Cancel can stop the active call without closing a connected host.</summary>
+    public bool CanCancel => (_connecting || _busy) && !_closing;
 
     /// <summary>Gets whether the source release, data directory, and plugin list still apply to the next workspace open.</summary>
     public bool CanEditSources => !_connecting && !_busy && _workspaceId is null && !_closing;
@@ -215,37 +297,53 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     /// <summary>Gets whether Open output can send <c>output_open</c>.</summary>
     public bool CanOpenOutput => CanCreateOutput;
 
-    /// <summary>Starts the selected MCP executable. A missing file or failed startup stays on the disconnected screen.</summary>
-    /// <returns>A task that completes when the session is connected, canceled, or visibly failed.</returns>
+    /// <summary>Starts the selected MCP executable, negotiates the protocol, and lists tools. A missing file or failed startup stays on the disconnected screen.</summary>
+    /// <returns>A task that completes when the session is connected, canceled, timed out, or visibly failed.</returns>
     public Task ConnectAsync()
     {
-        CancellationTokenSource timeout;
+        CancellationTokenSource linked;
+        int generation;
         lock (_state)
         {
-            if (_closing || _connecting || _client is not null)
+            if (_closing || _connecting || _client is not null || _hostExitObserved)
             {
                 return Task.CompletedTask;
             }
 
             _connecting = true;
-            timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            _activeCancellation = timeout;
+            generation = ++_activityGeneration;
+            linked = BeginOperation(_connectTimeout);
             _operationCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        var connect = ConnectCoreAsync(timeout);
+        var connect = ConnectCoreAsync(linked, generation);
         Publish(NotifyCommands);
         return connect;
     }
 
+    /// <summary>Cancels the active startup or tool call. A connected host keeps running; startup cancellation stops the child.</summary>
+    /// <returns>A completed task after the cancellation request is delivered.</returns>
+    public Task CancelAsync()
+    {
+        CancellationTokenSource? source;
+        lock (_state)
+        {
+            source = _userCancellation;
+        }
+
+        Cancel(source);
+        return Task.CompletedTask;
+    }
+
     /// <summary>Sends <c>workspace_open</c> for the explicit release, data directory, and source plugins.</summary>
     /// <returns>A task that completes when the session id is stored or the failure is visible.</returns>
-    public Task OpenWorkspaceAsync() => RunSessionOperationAsync(OpenWorkspaceCoreAsync);
+    public Task OpenWorkspaceAsync() => RunSessionOperationAsync(OpenWorkspaceCoreAsync, "Opening workspace");
 
     /// <summary>Sends <c>output_create</c> or <c>output_open</c> for the explicit output settings.</summary>
     /// <param name="createNew"><see langword="true"/> to create and save a new plugin; <see langword="false"/> to open an existing one.</param>
     /// <returns>A task that completes when the result or failure is visible. A tool error does not claim the output file was written.</returns>
-    public Task OpenOutputAsync(bool createNew) => RunSessionOperationAsync(token => OpenOutputCoreAsync(createNew, token));
+    public Task OpenOutputAsync(bool createNew) =>
+        RunSessionOperationAsync(token => OpenOutputCoreAsync(createNew, token), createNew ? "Creating output" : "Opening output");
 
     /// <summary>Cancels startup or the active call, closes the workspace when one is open, and stops the child process.</summary>
     /// <returns>A task that completes after the child has been disposed and the screen is disconnected.</returns>
@@ -268,131 +366,161 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         return close;
     }
 
-    private async Task ConnectCoreAsync(CancellationTokenSource timeout)
+    private async Task ConnectCoreAsync(CancellationTokenSource timeout, int generation)
     {
+        using var elapsedCancellation = new CancellationTokenSource();
+        var elapsedTask = PublishElapsedAsync("Connecting", elapsedCancellation.Token, generation);
         IWorkbenchMcpSession? session = null;
         try
         {
             Log.ForContext<WorkbenchViewModel>().Information("Connecting to MCP executable {ExecutablePath}.", McpExecutablePath);
             session = await _startSession(McpExecutablePath, timeout.Token).ConfigureAwait(false);
+            session.HostExited += _hostExitedHandler;
             var discard = false;
+            var closing = false;
+            var hostAlreadyExited = false;
             lock (_state)
             {
-                if (_closing || _client is not null)
+                closing = _closing;
+                hostAlreadyExited = session.HasExited;
+                if (closing || _client is not null || _hostExitObserved || hostAlreadyExited)
                 {
                     discard = true;
                 }
                 else
                 {
                     _client = session;
+                    _protocolVersion = session.ProtocolVersion;
+                    _serverName = session.ServerName;
                 }
             }
 
             if (discard)
             {
+                session.HostExited -= _hostExitedHandler;
                 await session.DisposeAsync().ConfigureAwait(false);
-                Publish(() =>
+                if (hostAlreadyExited && !closing)
                 {
-                    Status = "Disconnected";
-                    Diagnostics = "Connection canceled.";
-                });
+                    Publish(() =>
+                    {
+                        Status = "Host exited.";
+                        Diagnostics = "The MCP host process ended before the shell could keep the session. Connect starts a new host.";
+                        ClearDiscovery();
+                    });
+                }
+                else if (!ShouldReportHostExit())
+                {
+                    Publish(() =>
+                    {
+                        Status = "Disconnected";
+                        Diagnostics = StopText("Connection canceled.", "Connection timed out.");
+                        ClearDiscovery();
+                    });
+                }
+
                 return;
             }
 
             var version = session.ServerVersion;
-            Log.ForContext<WorkbenchViewModel>().Information("Connected to MCP server version {ServerVersion}.", version);
+            var protocol = session.ProtocolVersion;
+            var serverName = session.ServerName;
+            var toolCount = session.Tools.Count;
+            var capabilities = string.Join(", ", session.Capabilities.Select(pair => pair.Key));
+            if (capabilities.Length == 0)
+            {
+                capabilities = "none";
+            }
+
+            Log.ForContext<WorkbenchViewModel>().Information(
+                "Connected to MCP server {ServerName} {ServerVersion} using protocol {ProtocolVersion}. {ToolCount} tools discovered.",
+                serverName,
+                version,
+                protocol,
+                toolCount);
             Publish(() =>
             {
-                Status = $"Connected to CreationsForge MCP {version}.";
-                Diagnostics = "MCP initialize completed. No workspace is open.";
+                ShowDiscovery(session);
+                Status = $"Connected to {serverName} MCP {version}.";
+                Diagnostics = $"MCP initialize completed using protocol {protocol}. Capabilities: {capabilities}. {toolCount} tools discovered. No workspace is open.";
             });
         }
         catch (OperationCanceledException)
         {
             Log.ForContext<WorkbenchViewModel>().Information("Connection to {ExecutablePath} was canceled.", McpExecutablePath);
             await DisposeIfUnownedAsync(session).ConfigureAwait(false);
-            Publish(() =>
+            if (!ShouldReportHostExit())
             {
-                Status = "Disconnected";
-                Diagnostics = "Connection canceled.";
-            });
+                Publish(() =>
+                {
+                    Status = "Disconnected";
+                    Diagnostics = StopText("Connection canceled.", "Connection timed out.");
+                    ClearDiscovery();
+                });
+            }
         }
         catch (Exception exception)
         {
             Log.ForContext<WorkbenchViewModel>().Warning(exception, "Connection to {ExecutablePath} failed.", McpExecutablePath);
             await DisposeIfUnownedAsync(session).ConfigureAwait(false);
-            Publish(() =>
+            if (!ShouldReportHostExit())
             {
-                Status = "Disconnected";
-                Diagnostics = FormatError("Connection failed", exception);
-            });
+                Publish(() =>
+                {
+                    Status = "Disconnected";
+                    Diagnostics = FormatError("Connection failed", exception);
+                    ClearDiscovery();
+                });
+            }
         }
         finally
         {
-            lock (_state)
-            {
-                _connecting = false;
-                if (ReferenceEquals(_activeCancellation, timeout))
-                {
-                    _activeCancellation = null;
-                }
-            }
-
-            timeout.Dispose();
+            await StopElapsedAsync(elapsedCancellation, elapsedTask).ConfigureAwait(false);
+            ReleaseOperation(timeout, connecting: true);
             Publish(NotifyCommands);
-            lock (_state)
-            {
-                _operationCompleted?.TrySetResult();
-                _operationCompleted = null;
-            }
+            CompleteOperation();
         }
     }
 
-    private Task RunSessionOperationAsync(Func<CancellationToken, Task> operation)
+    private Task RunSessionOperationAsync(Func<CancellationToken, Task> operation, string phase)
     {
-        CancellationTokenSource timeout;
+        CancellationTokenSource linked;
+        int generation;
         lock (_state)
         {
-            if (_closing || _busy || _client is null)
+            if (_closing || _busy || _client is null || _hostExitObserved)
             {
                 return Task.CompletedTask;
             }
 
             _busy = true;
-            timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            _activeCancellation = timeout;
+            generation = ++_activityGeneration;
+            linked = BeginOperation(_operationTimeout);
             _operationCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        var running = RunSessionOperationCoreAsync(operation, timeout);
+        var running = RunSessionOperationCoreAsync(operation, linked, generation, phase);
         Publish(NotifyCommands);
         return running;
     }
 
-    private async Task RunSessionOperationCoreAsync(Func<CancellationToken, Task> operation, CancellationTokenSource timeout)
+    private async Task RunSessionOperationCoreAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationTokenSource timeout,
+        int generation,
+        string phase)
     {
+        using var elapsedCancellation = new CancellationTokenSource();
+        var elapsedTask = PublishElapsedAsync(phase, elapsedCancellation.Token, generation);
         try
         {
             await operation(timeout.Token).ConfigureAwait(false);
         }
         finally
         {
-            lock (_state)
-            {
-                _busy = false;
-                if (ReferenceEquals(_activeCancellation, timeout))
-                {
-                    _activeCancellation = null;
-                }
-            }
-
-            timeout.Dispose();
+            await StopElapsedAsync(elapsedCancellation, elapsedTask).ConfigureAwait(false);
+            ReleaseOperation(timeout, connecting: false);
             Publish(NotifyCommands);
-            lock (_state)
-            {
-                _operationCompleted?.TrySetResult();
-                _operationCompleted = null;
-            }
+            CompleteOperation();
         }
     }
 
@@ -455,22 +583,32 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                     return;
                 }
 
-                Status = "Workspace session ready.";
+                Status = "Workspace session ready." + RevisionSuffix(result);
                 Diagnostics = result.ToJsonString(IndentedJson);
             });
         }
         catch (OperationCanceledException)
         {
             Log.ForContext<WorkbenchViewModel>().Information("Workspace open was canceled.");
+            if (ShouldReportHostExit())
+            {
+                return;
+            }
+
             Publish(() =>
             {
-                Status = "Workspace open canceled.";
-                Diagnostics = "Workspace open canceled.";
+                Status = StopText("Workspace open canceled.", "Workspace open timed out.");
+                Diagnostics = StopText("Workspace open canceled.", "Workspace open timed out.");
             });
         }
         catch (Exception exception)
         {
             Log.ForContext<WorkbenchViewModel>().Warning(exception, "Workspace open failed for {DataDirectory}.", DataDirectory);
+            if (ShouldReportHostExit())
+            {
+                return;
+            }
+
             Publish(() =>
             {
                 Status = "Workspace open failed.";
@@ -568,22 +706,28 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         catch (OperationCanceledException)
         {
             Log.ForContext<WorkbenchViewModel>().Information("Output operation was canceled for {OutputPath}.", OutputPath);
-            await AbandonUnsavedOutputAsync().ConfigureAwait(false);
-            Publish(() =>
+            if (!ShouldReportHostExit())
             {
-                Status = "Output operation canceled.";
-                Diagnostics = "Output operation canceled.";
-            });
+                await AbandonUnsavedOutputAsync().ConfigureAwait(false);
+                Publish(() =>
+                {
+                    Status = StopText("Output operation canceled.", "Output operation timed out.");
+                    Diagnostics = StopText("Output operation canceled.", "Output operation timed out.");
+                });
+            }
         }
         catch (Exception exception)
         {
             Log.ForContext<WorkbenchViewModel>().Warning(exception, "Output operation failed for {OutputPath}.", OutputPath);
-            await AbandonUnsavedOutputAsync().ConfigureAwait(false);
-            Publish(() =>
+            if (!ShouldReportHostExit())
             {
-                Status = "Output operation failed.";
-                Diagnostics = FormatError("Output operation failed", exception);
-            });
+                await AbandonUnsavedOutputAsync().ConfigureAwait(false);
+                Publish(() =>
+                {
+                    Status = "Output operation failed.";
+                    Diagnostics = FormatError("Output operation failed", exception);
+                });
+            }
         }
     }
 
@@ -684,6 +828,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
 
             if (client is not null)
             {
+                client.HostExited -= _hostExitedHandler;
                 await client.DisposeAsync().ConfigureAwait(false);
             }
         }
@@ -697,6 +842,9 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 _connecting = false;
                 _busy = false;
                 _closing = false;
+                _hostExitObserved = false;
+                _protocolVersion = string.Empty;
+                _serverName = string.Empty;
                 _closeTask = null;
             }
 
@@ -704,6 +852,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             Publish(() =>
             {
                 Status = "Disconnected";
+                ClearDiscovery();
                 NotifyCommands();
             });
         }
@@ -764,7 +913,308 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
     }
 
-    private static string FormatError(string phase, Exception exception) => $"{phase}: {exception.Message}";
+    private static string FormatError(string phase, Exception exception)
+    {
+        if (exception is WorkbenchMcpException mcp)
+        {
+            var code = string.IsNullOrWhiteSpace(mcp.ErrorCode) ? string.Empty : $" ({mcp.ErrorCode})";
+            return $"{phase}: {mcp.Kind} error{code}: {mcp.Message}";
+        }
+
+        return $"{phase}: {exception.Message}";
+    }
+
+    /// <summary>Returns the status suffix for a revision carried on a tool result.</summary>
+    /// <param name="result">The tool result object.</param>
+    /// <returns>A revision sentence, or an empty string when the result has no revision.</returns>
+    private static string RevisionSuffix(JsonObject result)
+    {
+        return WorkbenchSessionReceipts.TryReadUInt64(result["structuredContent"]?["revision"], out var revision)
+            ? $" Revision {revision}."
+            : string.Empty;
+    }
+
+    /// <summary>Creates the linked user and timeout tokens for one bounded call.</summary>
+    /// <param name="limit">The maximum wait for this call.</param>
+    /// <returns>The linked token source passed to the call.</returns>
+    private CancellationTokenSource BeginOperation(TimeSpan limit)
+    {
+        _userCancellation = new CancellationTokenSource();
+        _timeoutCancellation = new CancellationTokenSource(limit);
+        _linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(_userCancellation.Token, _timeoutCancellation.Token);
+        _activeCancellation = _userCancellation;
+        return _linkedCancellation;
+    }
+
+    /// <summary>Drops the operation tokens when they still belong to <paramref name="timeout"/>.</summary>
+    /// <param name="timeout">The linked token source started for this operation.</param>
+    /// <param name="connecting"><see langword="true"/> when the operation is startup rather than a tool call.</param>
+    private void ReleaseOperation(CancellationTokenSource timeout, bool connecting)
+    {
+        CancellationTokenSource? user;
+        CancellationTokenSource? limit;
+        CancellationTokenSource? linked;
+        lock (_state)
+        {
+            if (connecting)
+            {
+                _connecting = false;
+            }
+            else
+            {
+                _busy = false;
+            }
+
+            if (!ReferenceEquals(_linkedCancellation, timeout))
+            {
+                return;
+            }
+
+            user = _userCancellation;
+            limit = _timeoutCancellation;
+            linked = _linkedCancellation;
+            _userCancellation = null;
+            _timeoutCancellation = null;
+            _linkedCancellation = null;
+            _activeCancellation = null;
+        }
+
+        user?.Dispose();
+        limit?.Dispose();
+        linked?.Dispose();
+    }
+
+    /// <summary>Marks the active operation complete so close and host-exit can continue.</summary>
+    private void CompleteOperation()
+    {
+        lock (_state)
+        {
+            _operationCompleted?.TrySetResult();
+            _operationCompleted = null;
+        }
+    }
+
+    /// <summary>Chooses the canceled or timed-out text for the active operation.</summary>
+    /// <param name="canceled">The text used when the user canceled the call.</param>
+    /// <param name="timedOut">The text used when the call reached its time limit.</param>
+    /// <returns><paramref name="timedOut"/> when the timeout fired without a user cancellation.</returns>
+    private string StopText(string canceled, string timedOut)
+    {
+        lock (_state)
+        {
+            var timedOutNow = _timeoutCancellation is { IsCancellationRequested: true }
+                && _userCancellation is not { IsCancellationRequested: true };
+            return timedOutNow ? timedOut : canceled;
+        }
+    }
+
+    /// <summary>Gets whether an unexpected host exit already owns the status text.</summary>
+    /// <returns><see langword="true"/> when the host-exit path will report the failure.</returns>
+    private bool ShouldReportHostExit()
+    {
+        lock (_state)
+        {
+            return _hostExitObserved;
+        }
+    }
+
+    /// <summary>Stops the elapsed-time loop for one operation.</summary>
+    /// <param name="elapsedCancellation">The token source that owns the loop.</param>
+    /// <param name="elapsedTask">The loop task.</param>
+    /// <returns>A task that completes after the loop has cleared its activity text.</returns>
+    private static async Task StopElapsedAsync(CancellationTokenSource elapsedCancellation, Task elapsedTask)
+    {
+        elapsedCancellation.Cancel();
+        try
+        {
+            await elapsedTask.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>Publishes the active phase and whole elapsed seconds until <paramref name="cancellationToken"/> is canceled.</summary>
+    /// <param name="phase">The call phase shown beside the elapsed time.</param>
+    /// <param name="cancellationToken">Cancels the loop when the call finishes.</param>
+    /// <param name="generation">The activity generation that owns this loop.</param>
+    /// <returns>A task that completes after the activity text is cleared or a newer call has replaced it.</returns>
+    private async Task PublishElapsedAsync(string phase, CancellationToken cancellationToken, int generation)
+    {
+        var watch = Stopwatch.StartNew();
+        PublishActivity(generation, phase, watch.Elapsed);
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                PublishActivity(generation, phase, watch.Elapsed);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            Publish(() =>
+            {
+                if (_activityGeneration != generation)
+                {
+                    return;
+                }
+
+                _activityText = string.Empty;
+                OnPropertyChanged(nameof(ActivityText));
+                OnPropertyChanged(nameof(HasActivity));
+            });
+        }
+    }
+
+    /// <summary>Shows one elapsed activity line when it still belongs to the current call.</summary>
+    /// <param name="generation">The activity generation that owns the line.</param>
+    /// <param name="phase">The call phase.</param>
+    /// <param name="elapsed">The time since the call started.</param>
+    private void PublishActivity(int generation, string phase, TimeSpan elapsed)
+    {
+        var seconds = Math.Max(0, (int)elapsed.TotalSeconds);
+        Publish(() =>
+        {
+            if (_activityGeneration != generation)
+            {
+                return;
+            }
+
+            _activityText = $"{phase} ({seconds}s)";
+            OnPropertyChanged(nameof(ActivityText));
+            OnPropertyChanged(nameof(HasActivity));
+        });
+    }
+
+    /// <summary>Starts cleanup when the connected child exits before the shell disposes it.</summary>
+    /// <param name="sender">The session whose process exited.</param>
+    /// <param name="eventArgs">The exit arguments. They are unused.</param>
+    private void OnHostExited(object? sender, EventArgs eventArgs)
+    {
+        if (sender is not IWorkbenchMcpSession session)
+        {
+            return;
+        }
+
+        lock (_state)
+        {
+            if (_closing || _hostExitObserved || !ReferenceEquals(_client, session))
+            {
+                return;
+            }
+
+            _hostExitObserved = true;
+            Cancel(_userCancellation);
+        }
+
+        _ = FinishHostExitAsync(session);
+    }
+
+    /// <summary>Disposes an exited host and returns the shell to a usable disconnected screen.</summary>
+    /// <param name="session">The session whose process exited.</param>
+    /// <returns>A task that completes after the child is released and the screen is updated.</returns>
+    private async Task FinishHostExitAsync(IWorkbenchMcpSession session)
+    {
+        Task? pending;
+        lock (_state)
+        {
+            pending = _operationCompleted?.Task;
+        }
+
+        if (pending is not null)
+        {
+            try
+            {
+                await pending.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        var owned = false;
+        lock (_state)
+        {
+            if (_closing || !ReferenceEquals(_client, session))
+            {
+                _hostExitObserved = false;
+                return;
+            }
+
+            _client = null;
+            _workspaceId = null;
+            _outputAttached = false;
+            _connecting = false;
+            _busy = false;
+            _protocolVersion = string.Empty;
+            _serverName = string.Empty;
+            owned = true;
+        }
+
+        if (!owned)
+        {
+            return;
+        }
+
+        session.HostExited -= _hostExitedHandler;
+        try
+        {
+            await session.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            Log.ForContext<WorkbenchViewModel>().Warning(exception, "Disposing an exited MCP host failed.");
+        }
+
+        lock (_state)
+        {
+            _hostExitObserved = false;
+        }
+
+        Log.ForContext<WorkbenchViewModel>().Warning("MCP host exited. Session and revision identifiers were cleared.");
+        Publish(() =>
+        {
+            Status = "Host exited.";
+            Diagnostics = "The MCP host process ended. Session and revision identifiers were cleared. Connect starts a new host.";
+            ClearDiscovery();
+            NotifyCommands();
+        });
+    }
+
+    /// <summary>Replaces the discovered tool list with the tools from <paramref name="session"/>.</summary>
+    /// <param name="session">The connected session.</param>
+    private void ShowDiscovery(IWorkbenchMcpSession session)
+    {
+        DiscoveredTools.Clear();
+        foreach (var tool in session.Tools)
+        {
+            DiscoveredTools.Add(tool);
+        }
+
+        SelectedTool = DiscoveredTools.FirstOrDefault();
+        OnPropertyChanged(nameof(DiscoverySummary));
+    }
+
+    /// <summary>Clears the discovered tool list and the selected schema.</summary>
+    private void ClearDiscovery()
+    {
+        DiscoveredTools.Clear();
+        SelectedTool = null;
+        OnPropertyChanged(nameof(DiscoverySummary));
+    }
+
+    /// <summary>Returns <paramref name="value"/> when it is positive; otherwise <paramref name="fallback"/>.</summary>
+    /// <param name="value">The caller-supplied limit.</param>
+    /// <param name="fallback">The limit used when <paramref name="value"/> is missing or not positive.</param>
+    /// <returns>A positive time limit.</returns>
+    private static TimeSpan Positive(TimeSpan? value, TimeSpan fallback)
+    {
+        return value is TimeSpan timeout && timeout > TimeSpan.Zero ? timeout : fallback;
+    }
 
     /// <summary>Limits a tool result copied into the log so a large payload does not fill the file.</summary>
     /// <param name="value">The serialized tool result.</param>
@@ -800,6 +1250,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     {
         OnPropertyChanged(nameof(CanConnect));
         OnPropertyChanged(nameof(CanDisconnect));
+        OnPropertyChanged(nameof(CanCancel));
         OnPropertyChanged(nameof(CanEditSources));
         OnPropertyChanged(nameof(CanEditOutput));
         OnPropertyChanged(nameof(CanOpenWorkspace));

@@ -221,7 +221,7 @@ public sealed class WorkbenchSettingsTests
         try
         {
             var viewModel = new WorkbenchViewModel(
-                (_, _) => Task.FromResult<IWorkbenchMcpSession>(new SilentSession()),
+                (_, _) => Task.FromResult<IWorkbenchMcpSession>(new WorkbenchSessionDouble()),
                 store,
                 () =>
                 {
@@ -288,7 +288,7 @@ public sealed class WorkbenchSettingsTests
             locatorCalls = 0;
             File.WriteAllText(savedMcp, "saved");
             var kept = new WorkbenchViewModel(
-                (_, _) => Task.FromResult<IWorkbenchMcpSession>(new SilentSession()),
+                (_, _) => Task.FromResult<IWorkbenchMcpSession>(new WorkbenchSessionDouble()),
                 new MemorySettingsStore(new WorkbenchSettingsState
                 {
                     Release = "Starfield",
@@ -350,16 +350,5 @@ public sealed class WorkbenchSettingsTests
 
             return clone;
         }
-    }
-
-    /// <summary>Satisfies the session factory without accepting a connection.</summary>
-    private sealed class SilentSession : IWorkbenchMcpSession
-    {
-        public string ServerVersion { get; } = "test";
-
-        public Task<JsonObject> CallAsync(string tool, JsonObject arguments, CancellationToken cancellationToken) =>
-            Task.FromResult(new JsonObject());
-
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

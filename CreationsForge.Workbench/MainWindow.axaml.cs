@@ -113,6 +113,11 @@ public sealed partial class MainWindow : Window
     /// <param name="e">The click arguments.</param>
     private async void ConnectClick(object? sender, RoutedEventArgs e) => await _viewModel.ConnectAsync();
 
+    /// <summary>Cancels the active startup or tool call. A connected host keeps running.</summary>
+    /// <param name="sender">The cancel button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void CancelClick(object? sender, RoutedEventArgs e) => await _viewModel.CancelAsync();
+
     /// <summary>Cancels startup or stops the current MCP child.</summary>
     /// <param name="sender">The disconnect button.</param>
     /// <param name="e">The click arguments.</param>
