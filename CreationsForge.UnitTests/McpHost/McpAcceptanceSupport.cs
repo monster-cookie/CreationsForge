@@ -126,6 +126,35 @@ internal static class McpPluginFixtures
         WritePlugin(source, Path.Combine(directory, SourcePlugin), master);
     }
 
+    /// <summary>Writes a source plugin with one editable keyword and one keyword that authoring tests must leave unchanged.</summary>
+    /// <param name="directory">The fixture directory.</param>
+    public static void WriteNamedSourceKeywords(string directory)
+    {
+        WriteStarfieldMaster(directory);
+        var masterKey = ModKey.FromNameAndExtension(StarfieldMaster);
+        var sourceKey = ModKey.FromNameAndExtension(SourcePlugin);
+        var source = new StarfieldMod(sourceKey, StarfieldRelease.Starfield);
+        ((IMod)source).MasterReferences.Add(new MasterReference { Master = masterKey });
+        source.Keywords.Add(NamedKeyword(source, SourceEditorId, "Source Name"));
+        source.Keywords.Add(NamedKeyword(source, "UnrelatedKeyword", "Leave Alone"));
+        var master = new StarfieldMod(masterKey, StarfieldRelease.Starfield);
+        WritePlugin(source, Path.Combine(directory, SourcePlugin), master);
+    }
+
+    private static StarfieldKeyword NamedKeyword(StarfieldMod source, string editorId, string name)
+    {
+        return new StarfieldKeyword(source.GetNextFormKey(), StarfieldRelease.Starfield)
+        {
+            EditorID = editorId,
+            Name = new Mutagen.Bethesda.Strings.TranslatedString(
+                Mutagen.Bethesda.Strings.Language.English,
+                new Dictionary<Mutagen.Bethesda.Strings.Language, string>
+                {
+                    [Mutagen.Bethesda.Strings.Language.English] = name,
+                }),
+        };
+    }
+
     public static void WriteMissingMasterSelection(string directory)
     {
         WriteStarfieldMaster(directory);

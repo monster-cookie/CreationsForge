@@ -7,6 +7,7 @@ using CreationsForge.Workbench;
 namespace CreationsForge.UnitTests.Workbench;
 
 /// <summary>Verifies the Workbench stdio client against a blocking child and the production MCP host.</summary>
+[Collection(McpProcessCollection.Name)]
 public sealed class StdioMcpClientTests
 {
     /// <summary>Canceling initialize stops the child process that was started for the handshake.</summary>

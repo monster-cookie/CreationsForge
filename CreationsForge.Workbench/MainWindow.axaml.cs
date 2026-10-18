@@ -137,4 +137,71 @@ public sealed partial class MainWindow : Window
     /// <param name="sender">The open output button.</param>
     /// <param name="e">The click arguments.</param>
     private async void OpenOutputClick(object? sender, RoutedEventArgs e) => await _viewModel.OpenOutputAsync(createNew: false);
+
+    /// <summary>Searches the open output for records in the selected family.</summary>
+    /// <param name="sender">The find button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void FindRecordsClick(object? sender, RoutedEventArgs e) => await _viewModel.FindRecordsAsync();
+
+    /// <summary>Starts an empty draft for a new record.</summary>
+    /// <param name="sender">The new button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void NewRecordClick(object? sender, RoutedEventArgs e) => await _viewModel.NewRecordAsync();
+
+    /// <summary>Reads the selected search hit into an override draft.</summary>
+    /// <param name="sender">The override button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void OverrideRecordClick(object? sender, RoutedEventArgs e) => await _viewModel.OverrideSelectedAsync();
+
+    /// <summary>Sends the current draft. A failure keeps the form and does not report a save.</summary>
+    /// <param name="sender">The apply button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void ApplyRecordClick(object? sender, RoutedEventArgs e) => await _viewModel.ApplyRecordAsync();
+
+    /// <summary>Compares the exact source version with the output version.</summary>
+    /// <param name="sender">The compare button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void CompareRecordClick(object? sender, RoutedEventArgs e) => await _viewModel.CompareRecordAsync();
+
+    /// <summary>Shows unsaved records without writing the output file.</summary>
+    /// <param name="sender">The preview button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void PreviewChangesClick(object? sender, RoutedEventArgs e) => await _viewModel.PreviewChangesAsync();
+
+    /// <summary>Saves the workspace. A failure does not report a successful save.</summary>
+    /// <param name="sender">The save button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void SaveChangesClick(object? sender, RoutedEventArgs e) => await _viewModel.SaveChangesAsync();
+
+    /// <summary>Discards unsaved edits without writing the output file.</summary>
+    /// <param name="sender">The discard button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void DiscardChangesClick(object? sender, RoutedEventArgs e) => await _viewModel.DiscardChangesAsync();
+
+    /// <summary>Opens the recorded output in a new MCP process.</summary>
+    /// <param name="sender">The reopen button.</param>
+    /// <param name="e">The click arguments.</param>
+    private async void ReopenFreshClick(object? sender, RoutedEventArgs e) => await _viewModel.ReopenFreshAsync();
+
+    /// <summary>Adds a language row to the translated field that owns the button.</summary>
+    /// <param name="sender">The add button.</param>
+    /// <param name="e">The click arguments.</param>
+    private void AddTranslationClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: WorkbenchFieldDraft field })
+        {
+            field.AddTranslation(field.TargetLanguage);
+        }
+    }
+
+    /// <summary>Removes the language row that owns the button.</summary>
+    /// <param name="sender">The remove button.</param>
+    /// <param name="e">The click arguments.</param>
+    private void RemoveTranslationClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: WorkbenchTranslationRow row })
+        {
+            row.Remove();
+        }
+    }
 }

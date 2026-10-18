@@ -9,7 +9,7 @@ using Serilog;
 namespace CreationsForge.Workbench;
 
 /// <summary>Owns explicit Workbench selections, visible status, and the MCP child lifetime.</summary>
-public sealed class WorkbenchViewModel : INotifyPropertyChanged
+public sealed partial class WorkbenchViewModel : INotifyPropertyChanged
 {
     private static readonly System.Text.Json.JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
     private static readonly HashSet<string> TrackedSettings = new(StringComparer.Ordinal)
@@ -62,6 +62,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     private bool _connecting;
     private bool _busy;
     private bool _closing;
+    private bool _reopening;
     private bool _hostExitObserved;
 
     /// <summary>Creates a view model that launches the production MCP executable and remembers selections.</summary>
@@ -274,7 +275,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     public bool HasLogFile => LogFilePath.Length > 0;
 
     /// <summary>Gets whether Connect can start a new child process.</summary>
-    public bool CanConnect => _client is null && !_connecting && !_closing && !_hostExitObserved;
+    public bool CanConnect => _client is null && !_connecting && !_closing && !_reopening && !_hostExitObserved;
 
     /// <summary>Gets whether Disconnect can cancel startup or stop the current child.</summary>
     public bool CanDisconnect => (_client is not null || _connecting) && !_closing;
@@ -283,16 +284,16 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     public bool CanCancel => (_connecting || _busy) && !_closing;
 
     /// <summary>Gets whether the source release, data directory, and plugin list still apply to the next workspace open.</summary>
-    public bool CanEditSources => !_connecting && !_busy && _workspaceId is null && !_closing;
+    public bool CanEditSources => !_connecting && !_busy && !_reopening && _workspaceId is null && !_closing;
 
     /// <summary>Gets whether output path, master style, text storage, and language can change.</summary>
-    public bool CanEditOutput => !_connecting && !_busy && !_outputAttached && !_closing;
+    public bool CanEditOutput => !_connecting && !_busy && !_reopening && !_outputAttached && !_closing;
 
     /// <summary>Gets whether Open workspace can send <c>workspace_open</c>.</summary>
-    public bool CanOpenWorkspace => _client is not null && _workspaceId is null && !_busy && !_closing;
+    public bool CanOpenWorkspace => _client is not null && _workspaceId is null && !_busy && !_reopening && !_closing;
 
     /// <summary>Gets whether Create output can send <c>output_create</c> and then <c>workspace_save</c>.</summary>
-    public bool CanCreateOutput => _client is not null && _workspaceId is not null && !_outputAttached && !_busy && !_closing;
+    public bool CanCreateOutput => _client is not null && _workspaceId is not null && !_outputAttached && !_busy && !_reopening && !_closing;
 
     /// <summary>Gets whether Open output can send <c>output_open</c>.</summary>
     public bool CanOpenOutput => CanCreateOutput;
@@ -664,6 +665,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             if (!createNew)
             {
                 Log.ForContext<WorkbenchViewModel>().Information("Opened existing output {OutputPath}.", OutputPath);
+                RememberPublishedOutput(OutputPath, saved: false);
                 Publish(() =>
                 {
                     Status = "Existing output attached to the workspace.";
@@ -697,6 +699,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             }
 
             Log.ForContext<WorkbenchViewModel>().Information("Created output file {DestinationPath}.", destination);
+            RememberPublishedOutput(destination, saved: true);
             Publish(() =>
             {
                 Status = "Created " + destination + ".";
@@ -775,6 +778,13 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
     {
         // Yield so callers can publish this task before its body takes the state lock.
         await Task.Yield();
+        var pendingEdits = false;
+        var closeFailed = false;
+        lock (_state)
+        {
+            pendingEdits = _authoringDirty;
+        }
+
         try
         {
             Task? pending;
@@ -818,6 +828,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 }
                 catch (Exception exception)
                 {
+                    closeFailed = true;
                     Log.ForContext<WorkbenchViewModel>().Warning(
                         exception,
                         "Workspace close failed for {WorkspaceId}. The child process will still be stopped.",
@@ -842,6 +853,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 _connecting = false;
                 _busy = false;
                 _closing = false;
+                _authoringDirty = false;
                 _hostExitObserved = false;
                 _protocolVersion = string.Empty;
                 _serverName = string.Empty;
@@ -852,6 +864,14 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             Publish(() =>
             {
                 Status = "Disconnected";
+                if (pendingEdits)
+                {
+                    var note = "Pending record edits were not written to the output file.";
+                    Diagnostics = closeFailed
+                        ? Diagnostics + Environment.NewLine + note
+                        : "Closed without saving. " + note;
+                }
+
                 ClearDiscovery();
                 NotifyCommands();
             });
@@ -1137,6 +1157,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         }
 
         var owned = false;
+        var lostEdits = false;
         lock (_state)
         {
             if (_closing || !ReferenceEquals(_client, session))
@@ -1145,11 +1166,13 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
                 return;
             }
 
+            lostEdits = _authoringDirty;
             _client = null;
             _workspaceId = null;
             _outputAttached = false;
             _connecting = false;
             _busy = false;
+            _authoringDirty = false;
             _protocolVersion = string.Empty;
             _serverName = string.Empty;
             owned = true;
@@ -1180,6 +1203,10 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         {
             Status = "Host exited.";
             Diagnostics = "The MCP host process ended. Session and revision identifiers were cleared. Connect starts a new host.";
+            if (lostEdits)
+            {
+                Diagnostics += " Pending record edits were not written to the output file.";
+            }
             ClearDiscovery();
             NotifyCommands();
         });
@@ -1205,6 +1232,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         DiscoveredTools.Clear();
         SelectedTool = null;
         OnPropertyChanged(nameof(DiscoverySummary));
+        ClearAuthoringSelection();
     }
 
     /// <summary>Returns <paramref name="value"/> when it is positive; otherwise <paramref name="fallback"/>.</summary>
@@ -1256,6 +1284,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanOpenWorkspace));
         OnPropertyChanged(nameof(CanCreateOutput));
         OnPropertyChanged(nameof(CanOpenOutput));
+        NotifyAuthoringCommands();
     }
 
     private void Publish(Action action)
@@ -1340,6 +1369,7 @@ public sealed class WorkbenchViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Release));
             ApplyProfileFields(normalized);
             EnsureDataDirectory();
+            ClearFamiliesForRelease();
         }
         finally
         {

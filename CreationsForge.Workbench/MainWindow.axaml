@@ -12,7 +12,7 @@
     <StackPanel Margin="24" Spacing="16">
       <StackPanel Spacing="4">
         <TextBlock FontSize="26" FontWeight="Bold">MCP Workbench</TextBlock>
-        <TextBlock TextWrapping="Wrap">A standalone developer shell for the production CreationsForge MCP host. Connect negotiates the protocol, lists tools, and keeps session and revision identifiers for later calls.</TextBlock>
+        <TextBlock TextWrapping="Wrap">A standalone developer shell for the production CreationsForge MCP host. Connect negotiates the protocol and lists tools. The guided authoring pane creates, overrides, compares, saves, and reopens records through those tools.</TextBlock>
       </StackPanel>
 
       <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">
@@ -62,6 +62,95 @@
             <Button Click="CreateOutputClick" IsEnabled="{Binding CanCreateOutput}">Create output</Button>
             <Button Click="OpenOutputClick" IsEnabled="{Binding CanOpenOutput}">Open output</Button>
           </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="#606060" BorderThickness="1" CornerRadius="4" Padding="16">
+        <StackPanel Spacing="12">
+          <TextBlock FontSize="18" FontWeight="SemiBold">Guided authoring</TextBlock>
+          <TextBlock TextWrapping="Wrap">Find, create, or override a record, then Apply. Apply stays in memory. Save writes the output. Reopen starts a new MCP process and reads the file back. Validation, save, and discard failures stay on this screen and do not report a save.</TextBlock>
+          <TextBlock Text="{Binding PublishedPathText}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding AuthoringModeText}" TextWrapping="Wrap" />
+          <TextBlock Text="Unsaved edits are not on disk." IsVisible="{Binding HasUnsavedEdits}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Text storage" />
+            <TextBlock Text="{Binding TextStorageMode}" FontWeight="SemiBold" />
+            <TextBlock Text="language" />
+            <TextBlock Text="{Binding Language}" FontWeight="SemiBold" />
+          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+            <TextBlock Grid.Row="0" VerticalAlignment="Center">Family</TextBlock>
+            <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" IsEnabled="{Binding CanFindRecords}" />
+            <TextBlock Grid.Row="1" VerticalAlignment="Center">EditorID filter</TextBlock>
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding EditorIdFilter}" PlaceholderText="Optional EditorID filter" IsEnabled="{Binding CanFindRecords}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Click="FindRecordsClick" IsEnabled="{Binding CanFindRecords}">Find record</Button>
+            <Button Click="NewRecordClick" IsEnabled="{Binding CanCreateRecord}">New</Button>
+            <Button Click="OverrideRecordClick" IsEnabled="{Binding CanOverrideRecord}">Override</Button>
+          </StackPanel>
+          <ListBox ItemsSource="{Binding SearchHits}" SelectedItem="{Binding SelectedHit}" MaxHeight="140">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:WorkbenchRecordHit">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <ScrollViewer MaxHeight="360" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Fields}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WorkbenchFieldDraft">
+                  <Border BorderBrush="#404040" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                    <StackPanel Spacing="6">
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Path}" />
+                      <TextBlock Text="{Binding UnsupportedReason}" IsVisible="{Binding IsUnsupported}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding ReferenceSummary}" IsVisible="{Binding HasReferenceSummary}" TextWrapping="Wrap" />
+                      <CheckBox Content="Clear value" IsChecked="{Binding ClearValue}" IsVisible="{Binding CanClear}" />
+                      <TextBox Text="{Binding StringValue}" IsVisible="{Binding IsString}" />
+                      <CheckBox Content="Value" IsChecked="{Binding BooleanValue}" IsVisible="{Binding IsBoolean}" />
+                      <TextBox Text="{Binding NumberText}" IsVisible="{Binding IsNumber}" />
+                      <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EnumValue}" IsVisible="{Binding IsEnum}" />
+                      <ItemsControl ItemsSource="{Binding Flags}" IsVisible="{Binding IsFlagsEnum}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:WorkbenchFlagChoice">
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <TextBox Text="{Binding FormKeyText}" PlaceholderText="FormKey, such as 000001:Source.esm" IsVisible="{Binding IsFormLink}" />
+                      <StackPanel Spacing="6" IsVisible="{Binding IsTranslated}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                          <TextBlock VerticalAlignment="Center">Target language</TextBlock>
+                          <ComboBox Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding TargetLanguage}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Translations}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:WorkbenchTranslationRow">
+                              <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                                <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" />
+                                <TextBox Grid.Column="1" Text="{Binding Value}" />
+                                <Button Grid.Column="2" Content="Remove" Click="RemoveTranslationClick" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="Add language" Click="AddTranslationClick" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Click="ApplyRecordClick" IsEnabled="{Binding CanApplyRecord}">Apply</Button>
+            <Button Click="CompareRecordClick" IsEnabled="{Binding CanCompareRecord}">Compare</Button>
+            <Button Click="PreviewChangesClick" IsEnabled="{Binding CanPreviewChanges}">Preview</Button>
+            <Button Click="SaveChangesClick" IsEnabled="{Binding CanSaveChanges}">Save</Button>
+            <Button Click="DiscardChangesClick" IsEnabled="{Binding CanDiscardChanges}">Discard</Button>
+            <Button Click="ReopenFreshClick" IsEnabled="{Binding CanReopenFresh}">Reopen in a fresh session</Button>
+          </StackPanel>
+          <TextBox Text="{Binding Observations}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" />
         </StackPanel>
       </Border>
 
