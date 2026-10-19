@@ -1,11 +1,11 @@
 pkgname=creationsforge
 pkgver=0.0.0
 pkgrel=1
-pkgdesc='Creations Forge browses, compares, and edits FormLists in Bethesda plugins.'
+pkgdesc='Creations Forge local MCP host for Bethesda plugin authoring.'
 arch=('x86_64')
 url='https://github.com/Venpi/CreationsForge'
 license=('custom')
-depends=('glibc' 'fontconfig' 'libgl' 'dbus' 'libxrandr' 'libxi')
+depends=('glibc')
 source=('package-root.tar.gz')
 # Release packaging must replace this placeholder with the SHA-256 of package-root.tar.gz.
 sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
