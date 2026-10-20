@@ -1,4 +1,5 @@
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 
 namespace CreationsForge.Engine.Records;
@@ -32,6 +33,17 @@ public abstract class RecordFamily
     internal abstract void Publish(IMod output, IMajorRecord record);
 
     internal abstract bool Remove(IMod output, FormKey formKey);
+
+    /// <summary>Inserts an override through its Mutagen context when the family knows the parent location.</summary>
+    /// <param name="output">The mutable output plugin.</param>
+    /// <param name="context">The exact source context, including its parent chain.</param>
+    /// <param name="record">The mutable output record when placement succeeds.</param>
+    /// <returns>Whether this family placed the override.</returns>
+    internal virtual bool TryPlaceOverride(IMod output, IModContext context, out IMajorRecord record)
+    {
+        record = null!;
+        return false;
+    }
 
     internal void ValidateChanges(IEnumerable<RecordFieldChange> changes)
     {

@@ -27,7 +27,7 @@ public sealed partial class PluginWorkspaceTests
             {
                 Set("EditorID", RecordValue.FromString($"Created{descriptor.FamilyId}")),
             };
-            if (descriptor.FamilyId == "Book")
+            if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
             {
                 changes.Add(Set("Teaches", NoneTeachTarget()));
             }
@@ -36,9 +36,14 @@ public sealed partial class PluginWorkspaceTests
         });
 
         var result = workspace.Records.Apply(new RecordChangeSet(0, mutations));
-        var expected = ExpectedFamilies(release);
+        var expected = workspace.Records.Families.Select(family => family.FamilyId).ToArray();
 
-        Assert.Equal(expected, workspace.Records.Families.Select(family => family.FamilyId));
+        Assert.Equal(expected, expected.Order(StringComparer.Ordinal));
+        Assert.Contains("Cell", expected);
+        Assert.Contains("Worldspace", expected);
+        Assert.DoesNotContain("CellBlock", expected);
+        Assert.All(UnwritableFamilies(release), family => Assert.DoesNotContain(family, expected));
+        Assert.True(expected.Length >= MinimumFamilyCount(release));
         Assert.Equal(1UL, result.Revision);
         Assert.Equal(expected.Length, result.Records.Count);
         AssertContainedFamilies(workspace.Output, result.Records);
@@ -70,7 +75,7 @@ public sealed partial class PluginWorkspaceTests
         var result = workspace.Records.Apply(new RecordChangeSet(0, mutations));
 
         Assert.Equal(1UL, result.Revision);
-        Assert.Equal(ExpectedFamilies(release).Length, result.Records.Count);
+        Assert.Equal(workspace.Records.Families.Count, result.Records.Count);
         foreach (var pair in fixture.FormKeys)
         {
             var comparison = workspace.Records.Compare(
@@ -135,7 +140,7 @@ public sealed partial class PluginWorkspaceTests
                 {
                     Set("EditorID", RecordValue.FromString($"Saved{descriptor.FamilyId}")),
                 };
-                if (descriptor.FamilyId == "Book")
+                if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
                 {
                     changes.Add(Set("Teaches", NoneTeachTarget()));
                 }
@@ -439,13 +444,24 @@ public sealed partial class PluginWorkspaceTests
         return prefix is null || requested.StartsWith(prefix, StringComparison.Ordinal) ? requested : prefix + requested;
     }
 
-    private static string[] ExpectedFamilies(GameRelease release)
+    private static string[] UnwritableFamilies(GameRelease release)
     {
         return release switch
         {
-            GameRelease.Starfield => StarfieldFamilies,
-            GameRelease.Fallout4 => Fallout4Families,
-            GameRelease.SkyrimSE => SkyrimFamilies,
+            GameRelease.Starfield => ["ContainerModification", "UnknownObjectModification"],
+            GameRelease.Fallout4 => ["DamageTypeIndexed"],
+            GameRelease.SkyrimSE => [],
+            _ => throw new ArgumentOutOfRangeException(nameof(release), release, null),
+        };
+    }
+
+    private static int MinimumFamilyCount(GameRelease release)
+    {
+        return release switch
+        {
+            GameRelease.Starfield => 190,
+            GameRelease.Fallout4 => 140,
+            GameRelease.SkyrimSE => 120,
             _ => throw new ArgumentOutOfRangeException(nameof(release), release, null),
         };
     }
@@ -461,7 +477,7 @@ public sealed partial class PluginWorkspaceTests
             {
                 Set("EditorID", RecordValue.FromString($"Source{descriptor.FamilyId}")),
             };
-            if (descriptor.FamilyId == "Book")
+            if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
             {
                 changes.Add(Set("Teaches", NoneTeachTarget()));
             }

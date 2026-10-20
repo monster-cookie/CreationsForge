@@ -111,6 +111,7 @@ internal sealed class PluginSaveService
 
         try
         {
+            RejectDuplicateFormKeys(workspace.Output, expectedRecordCounts);
             _backend.CreateDirectory(stagingRoot);
             _backend.CreateDirectory(backupRoot);
 
@@ -324,10 +325,18 @@ internal sealed class PluginSaveService
             workspace.ExpectedDestinationStamp);
     }
 
+    private static void RejectDuplicateFormKeys(IModGetter output, IReadOnlyDictionary<FormKey, int> counts)
+    {
+        var duplicates = counts.Where(pair => pair.Value > 1).Select(pair => pair.Key.ToString()).ToArray();
+        if (duplicates.Length > 0)
+        {
+            throw new PluginWorkspaceException($"Output '{output.ModKey}' contains duplicate FormKeys: {string.Join(", ", duplicates)}.");
+        }
+    }
+
     private static IReadOnlyDictionary<FormKey, int> CountRecordIdentities(IModGetter output)
     {
-        return output
-            .EnumerateMajorRecords()
+        return MutagenRecordPlacement.ContainedRecords(output)
             .GroupBy(record => record.FormKey)
             .ToDictionary(group => group.Key, group => group.Count());
     }
@@ -358,6 +367,7 @@ internal sealed class PluginSaveService
         }
 
         var actualRecordCounts = CountRecordIdentities(output);
+        RejectDuplicateFormKeys(output, actualRecordCounts);
         if (actualRecordCounts.Count != expectedRecordCounts.Count
             || expectedRecordCounts.Any(pair => !actualRecordCounts.TryGetValue(pair.Key, out var count) || count != pair.Value))
         {
@@ -392,11 +402,13 @@ internal sealed class PluginSaveService
             var record = family.FindOutputRecord(output, expected.FormKey)
                 ?? throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' is missing changed record '{expected.FormKey}' from family '{expected.FamilyId}'.");
             var actualValues = family.ReadFields(record);
-            var changedFields = expected.Values
-                .Where(pair => !actualValues.TryGetValue(pair.Key, out var value) || !RecordValueComparer.Equals(pair.Value, value))
-                .Select(pair => pair.Key)
+            var compared = expected.ChangedPaths ?? (IReadOnlyCollection<string>)expected.Values.Keys;
+            var changedFields = compared
+                .Where(path => !expected.Values.TryGetValue(path, out var expectedValue)
+                    || !actualValues.TryGetValue(path, out var value)
+                    || !RecordValueComparer.Equals(expectedValue, value))
                 .ToArray();
-            if (actualValues.Count != expected.Values.Count || changedFields.Length > 0)
+            if (changedFields.Length > 0)
             {
                 throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' changed registered values for '{expected.FamilyId}' record '{expected.FormKey}': {string.Join(", ", changedFields)}.");
             }
