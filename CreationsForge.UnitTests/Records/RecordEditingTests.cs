@@ -1,30 +1,16 @@
+using CreationsForge.Engine.Persistence;
 using CreationsForge.Engine.Records;
 using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.UnitTests.Workspaces;
 
-/// <summary>Verifies the first record editing tranche through the production workspace boundary.</summary>
+/// <summary>Verifies declared record editing through the production workspace boundary.</summary>
 public sealed partial class PluginWorkspaceTests
 {
-    private static readonly string[] FirstTrancheFamilies =
-    [
-        "Armor",
-        "Book",
-        "Faction",
-        "FormList",
-        "Global",
-        "Keyword",
-        "Message",
-        "Quest",
-        "Race",
-        "TextureSet",
-    ];
-
-    /// <summary>Creates and reads every declared first-tranche family with one atomic revision increment.</summary>
+    /// <summary>Creates and reads every declared family with one atomic revision increment.</summary>
     [Theory]
     [InlineData(GameRelease.Starfield)]
     [InlineData(GameRelease.Fallout4)]
@@ -41,7 +27,7 @@ public sealed partial class PluginWorkspaceTests
             {
                 Set("EditorID", RecordValue.FromString($"Created{descriptor.FamilyId}")),
             };
-            if (descriptor.FamilyId == "Book")
+            if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
             {
                 changes.Add(Set("Teaches", NoneTeachTarget()));
             }
@@ -50,16 +36,22 @@ public sealed partial class PluginWorkspaceTests
         });
 
         var result = workspace.Records.Apply(new RecordChangeSet(0, mutations));
+        var expected = workspace.Records.Families.Select(family => family.FamilyId).ToArray();
 
-        Assert.Equal(FirstTrancheFamilies, workspace.Records.Families.Select(family => family.FamilyId));
+        Assert.Equal(expected, expected.Order(StringComparer.Ordinal));
+        Assert.Contains("Cell", expected);
+        Assert.Contains("Worldspace", expected);
+        Assert.DoesNotContain("CellBlock", expected);
+        Assert.All(UnwritableFamilies(release), family => Assert.DoesNotContain(family, expected));
+        Assert.True(expected.Length >= MinimumFamilyCount(release));
         Assert.Equal(1UL, result.Revision);
-        Assert.Equal(10, result.Records.Count);
-        Assert.Equal(10, workspace.Output.EnumerateMajorRecords().Count());
+        Assert.Equal(expected.Length, result.Records.Count);
+        AssertContainedFamilies(workspace.Output, result.Records);
         foreach (var record in result.Records)
         {
             var read = workspace.Records.Read(new RecordLocator(record.FamilyId, record.FormKey, outputModKey));
             var editorId = Assert.IsType<RecordValue.StringRecordValue>(read.Values["EditorID"]);
-            Assert.Equal($"Created{record.FamilyId}", editorId.Value);
+            Assert.Equal(CanonicalEditorId(record.FamilyId, $"Created{record.FamilyId}"), editorId.Value);
         }
     }
 
@@ -68,10 +60,10 @@ public sealed partial class PluginWorkspaceTests
     [InlineData(GameRelease.Starfield)]
     [InlineData(GameRelease.Fallout4)]
     [InlineData(GameRelease.SkyrimSE)]
-    public void OverridesAndComparesEveryDeclaredFirstTrancheFamily(GameRelease release)
+    public async Task OverridesAndComparesEveryDeclaredFirstTrancheFamily(GameRelease release)
     {
         using var directory = new TemporaryDirectory();
-        var fixture = CreateRecordEditingFixture(directory.Path, release);
+        var fixture = await CreateRecordEditingFixture(directory.Path, release);
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
         using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, release, [fixture.ModKey], outputModKey));
         var mutations = fixture.FormKeys.Select(pair => RecordMutation.Override(
@@ -83,24 +75,139 @@ public sealed partial class PluginWorkspaceTests
         var result = workspace.Records.Apply(new RecordChangeSet(0, mutations));
 
         Assert.Equal(1UL, result.Revision);
-        Assert.Equal(10, result.Records.Count);
+        Assert.Equal(workspace.Records.Families.Count, result.Records.Count);
         foreach (var pair in fixture.FormKeys)
         {
             var comparison = workspace.Records.Compare(
                 new RecordLocator(pair.Key, pair.Value, fixture.ModKey),
                 new RecordLocator(pair.Key, pair.Value, outputModKey));
             var difference = Assert.Single(comparison.Differences, item => item.Path == "EditorID");
-            Assert.Equal($"Source{pair.Key}", Assert.IsType<RecordValue.StringRecordValue>(difference.Left).Value);
-            Assert.Equal($"Overridden{pair.Key}", Assert.IsType<RecordValue.StringRecordValue>(difference.Right).Value);
+            Assert.Equal(CanonicalEditorId(pair.Key, $"Source{pair.Key}"), Assert.IsType<RecordValue.StringRecordValue>(difference.Left).Value);
+            Assert.Equal(CanonicalEditorId(pair.Key, $"Overridden{pair.Key}"), Assert.IsType<RecordValue.StringRecordValue>(difference.Right).Value);
         }
+    }
+
+    /// <summary>Keeps unedited Ammunition value and weight when a later change set updates only the editor ID.</summary>
+    [Theory]
+    [InlineData(GameRelease.Starfield)]
+    [InlineData(GameRelease.Fallout4)]
+    [InlineData(GameRelease.SkyrimSE)]
+    public void LaterEditorIdChangePreservesAmmunitionValueAndWeight(GameRelease release)
+    {
+        using var directory = new TemporaryDirectory();
+        PrepareRequiredStarfieldMaster(directory.Path, release);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, release, [], outputModKey));
+        var created = workspace.Records.Apply(new RecordChangeSet(0,
+        [
+            RecordMutation.Create("Ammunition",
+            [
+                Set("EditorID", RecordValue.FromString("Round")),
+                Set("Value", RecordValue.FromUnsignedInteger(9)),
+                Set("Weight", RecordValue.FromFloatingPoint(2.5)),
+            ]),
+        ])).Records.Single();
+
+        var updated = workspace.Records.Apply(new RecordChangeSet(1,
+        [
+            RecordMutation.Override("Ammunition", created.FormKey, outputModKey,
+            [
+                Set("EditorID", RecordValue.FromString("RenamedRound")),
+            ]),
+        ])).Records.Single();
+
+        Assert.Equal("RenamedRound", Assert.IsType<RecordValue.StringRecordValue>(updated.Values["EditorID"]).Value);
+        Assert.Equal(9UL, Assert.IsType<RecordValue.UnsignedIntegerRecordValue>(updated.Values["Value"]).Value);
+        Assert.Equal(2.5, Assert.IsType<RecordValue.FloatingPointRecordValue>(updated.Values["Weight"]).Value);
+    }
+
+    /// <summary>Saves one new record for every declared family and reads each editor ID from a fresh workspace.</summary>
+    [Theory]
+    [InlineData(GameRelease.Starfield)]
+    [InlineData(GameRelease.Fallout4)]
+    [InlineData(GameRelease.SkyrimSE)]
+    public async Task SaveReopensEveryDeclaredFamilyEditorId(GameRelease release)
+    {
+        using var directory = new TemporaryDirectory();
+        PrepareRequiredStarfieldMaster(directory.Path, release);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        IReadOnlyList<RecordSnapshot> created;
+        using (var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, release, [], outputModKey)))
+        {
+            created = workspace.Records.Apply(new RecordChangeSet(0, workspace.Records.Families.Select(descriptor =>
+            {
+                var changes = new List<RecordFieldChange>
+                {
+                    Set("EditorID", RecordValue.FromString($"Saved{descriptor.FamilyId}")),
+                };
+                if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
+                {
+                    changes.Add(Set("Teaches", NoneTeachTarget()));
+                }
+
+                if (descriptor.FamilyId == "Global")
+                {
+                    changes.Add(Set("Data", RecordValue.FromFloatingPoint(1.5)));
+                }
+
+                return RecordMutation.Create(descriptor.FamilyId, changes);
+            }))).Records;
+            var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
+            Assert.True(result.Status == PluginSaveStatus.Succeeded, result.Diagnostic);
+        }
+
+        using var reopened = CreateFactory().Open(CreateExistingRequest(directory.Path, release, outputModKey));
+        AssertContainedFamilies(reopened.Output, created);
+        foreach (var record in created)
+        {
+            var snapshot = reopened.Records.Read(new RecordLocator(record.FamilyId, record.FormKey, outputModKey));
+            Assert.Equal(CanonicalEditorId(record.FamilyId, $"Saved{record.FamilyId}"), Assert.IsType<RecordValue.StringRecordValue>(snapshot.Values["EditorID"]).Value);
+            if (record.FamilyId == "Global")
+            {
+                Assert.Equal(1.5, Assert.IsType<RecordValue.FloatingPointRecordValue>(snapshot.Values["Data"]).Value);
+            }
+        }
+    }
+
+    /// <summary>Saves Ammunition with nondefault value and weight and reads those fields from a fresh workspace.</summary>
+    [Theory]
+    [InlineData(GameRelease.Starfield)]
+    [InlineData(GameRelease.Fallout4)]
+    [InlineData(GameRelease.SkyrimSE)]
+    public async Task SaveReopensAmmunitionValueAndWeight(GameRelease release)
+    {
+        using var directory = new TemporaryDirectory();
+        PrepareRequiredStarfieldMaster(directory.Path, release);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        FormKey createdFormKey;
+        using (var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, release, [], outputModKey)))
+        {
+            createdFormKey = workspace.Records.Apply(new RecordChangeSet(0,
+            [
+                RecordMutation.Create("Ammunition",
+                [
+                    Set("EditorID", RecordValue.FromString("SavedRound")),
+                    Set("Value", RecordValue.FromUnsignedInteger(9)),
+                    Set("Weight", RecordValue.FromFloatingPoint(2.5)),
+                ]),
+            ])).Records.Single().FormKey;
+            var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
+            Assert.True(result.Status == PluginSaveStatus.Succeeded, result.Diagnostic);
+        }
+
+        using var reopened = CreateFactory().Open(CreateExistingRequest(directory.Path, release, outputModKey));
+        var snapshot = reopened.Records.Read(new RecordLocator("Ammunition", createdFormKey, outputModKey));
+        Assert.Equal("SavedRound", Assert.IsType<RecordValue.StringRecordValue>(snapshot.Values["EditorID"]).Value);
+        Assert.Equal(9UL, Assert.IsType<RecordValue.UnsignedIntegerRecordValue>(snapshot.Values["Value"]).Value);
+        Assert.Equal(2.5, Assert.IsType<RecordValue.FloatingPointRecordValue>(snapshot.Values["Weight"]).Value);
     }
 
     /// <summary>Preserves nulls, ordered duplicate links, translations, nested values, and polymorphic choices in record candidates.</summary>
     [Fact]
-    public void AppliesReusableFieldShapesWithoutFlatteningRecordValues()
+    public async Task AppliesReusableFieldShapesWithoutFlatteningRecordValues()
     {
         using var directory = new TemporaryDirectory();
-        var fixture = CreateRecordEditingFixture(directory.Path, GameRelease.Starfield);
+        var fixture = await CreateRecordEditingFixture(directory.Path, GameRelease.Starfield);
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
         using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Starfield, [fixture.ModKey], outputModKey));
         var keywordKey = fixture.FormKeys["Keyword"];
@@ -271,10 +378,10 @@ public sealed partial class PluginWorkspaceTests
 
     /// <summary>Applies bounded list operations in order without collapsing duplicate FormLinks.</summary>
     [Fact]
-    public void AppliesDeclaredOrderedListOperations()
+    public async Task AppliesDeclaredOrderedListOperations()
     {
         using var directory = new TemporaryDirectory();
-        var fixture = CreateRecordEditingFixture(directory.Path, GameRelease.Starfield);
+        var fixture = await CreateRecordEditingFixture(directory.Path, GameRelease.Starfield);
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
         using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Starfield, [fixture.ModKey], outputModKey));
         var keywordKey = fixture.FormKeys["Keyword"];
@@ -317,105 +424,74 @@ public sealed partial class PluginWorkspaceTests
         }
     }
 
-    private static RecordEditingFixture CreateRecordEditingFixture(string directory, GameRelease release)
+    private static void AssertContainedFamilies(Mutagen.Bethesda.Plugins.Records.IModGetter output, IEnumerable<RecordSnapshot> records)
+    {
+        var actual = output.EnumerateMajorRecords().Select(record => record.FormKey).ToHashSet();
+        Assert.All(records, record => Assert.Contains(record.FormKey, actual));
+    }
+
+    private static string CanonicalEditorId(string familyId, string requested)
+    {
+        var prefix = familyId switch
+        {
+            "GameSetting" or "GameSettingFloat" => "f",
+            "GameSettingBool" => "b",
+            "GameSettingInt" => "i",
+            "GameSettingString" => "s",
+            "GameSettingUInt" => "u",
+            _ => null,
+        };
+        return prefix is null || requested.StartsWith(prefix, StringComparison.Ordinal) ? requested : prefix + requested;
+    }
+
+    private static string[] UnwritableFamilies(GameRelease release)
     {
         return release switch
         {
-            GameRelease.Starfield => CreateStarfieldEditingFixture(directory),
-            GameRelease.Fallout4 => CreateFallout4EditingFixture(directory),
-            GameRelease.SkyrimSE => CreateSkyrimEditingFixture(directory),
+            GameRelease.Starfield => ["ContainerModification", "UnknownObjectModification"],
+            GameRelease.Fallout4 => ["DamageTypeIndexed"],
+            GameRelease.SkyrimSE => [],
             _ => throw new ArgumentOutOfRangeException(nameof(release), release, null),
         };
     }
 
-    private static RecordEditingFixture CreateStarfieldEditingFixture(string directory)
+    private static int MinimumFamilyCount(GameRelease release)
     {
-        var modKey = ModKey.FromNameAndExtension("Starfield.esm");
-        var mod = new Mutagen.Bethesda.Starfield.StarfieldMod(modKey, Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield);
-        var records = new Dictionary<string, IMajorRecord>
+        return release switch
         {
-            ["Armor"] = Add(mod.Armors, new Mutagen.Bethesda.Starfield.Armor(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Book"] = Add(mod.Books, new Mutagen.Bethesda.Starfield.Book(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)
-            {
-                Teaches = new Mutagen.Bethesda.Starfield.BookTeachesNothing(),
-            }),
-            ["Faction"] = Add(mod.Factions, new Mutagen.Bethesda.Starfield.Faction(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["FormList"] = Add(mod.FormLists, new Mutagen.Bethesda.Starfield.FormList(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Global"] = Add(mod.Globals, new Mutagen.Bethesda.Starfield.Global(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Keyword"] = Add(mod.Keywords, new Mutagen.Bethesda.Starfield.Keyword(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Message"] = Add(mod.Messages, new Mutagen.Bethesda.Starfield.Message(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Quest"] = Add(mod.Quests, new Mutagen.Bethesda.Starfield.Quest(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["Race"] = Add(mod.Races, new Mutagen.Bethesda.Starfield.Race(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
-            ["TextureSet"] = Add(mod.TextureSets, new Mutagen.Bethesda.Starfield.TextureSet(mod.GetNextFormKey(), Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)),
+            GameRelease.Starfield => 190,
+            GameRelease.Fallout4 => 140,
+            GameRelease.SkyrimSE => 120,
+            _ => throw new ArgumentOutOfRangeException(nameof(release), release, null),
         };
-        return WriteEditingFixture(directory, mod, records);
     }
 
-    private static RecordEditingFixture CreateFallout4EditingFixture(string directory)
+    private static async Task<RecordEditingFixture> CreateRecordEditingFixture(string directory, GameRelease release)
     {
-        var modKey = ModKey.FromNameAndExtension("Base.esm");
-        var mod = new Mutagen.Bethesda.Fallout4.Fallout4Mod(modKey, Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4);
-        var records = new Dictionary<string, IMajorRecord>
+        PrepareRequiredStarfieldMaster(directory, release);
+        var modKey = ModKey.FromNameAndExtension("Source.esm");
+        using var workspace = CreateFactory().Open(CreateNewRequest(directory, release, [], modKey));
+        var created = workspace.Records.Apply(new RecordChangeSet(0, workspace.Records.Families.Select(descriptor =>
         {
-            ["Armor"] = Add(mod.Armors, new Mutagen.Bethesda.Fallout4.Armor(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Book"] = Add(mod.Books, new Mutagen.Bethesda.Fallout4.Book(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)
+            var changes = new List<RecordFieldChange>
             {
-                Teaches = new Mutagen.Bethesda.Fallout4.BookTeachesNothing(),
-            }),
-            ["Faction"] = Add(mod.Factions, new Mutagen.Bethesda.Fallout4.Faction(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["FormList"] = Add(mod.FormLists, new Mutagen.Bethesda.Fallout4.FormList(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Global"] = Add(mod.Globals, new Mutagen.Bethesda.Fallout4.GlobalFloat(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Keyword"] = Add(mod.Keywords, new Mutagen.Bethesda.Fallout4.Keyword(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Message"] = Add(mod.Messages, new Mutagen.Bethesda.Fallout4.Message(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Quest"] = Add(mod.Quests, new Mutagen.Bethesda.Fallout4.Quest(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["Race"] = Add(mod.Races, new Mutagen.Bethesda.Fallout4.Race(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-            ["TextureSet"] = Add(mod.TextureSets, new Mutagen.Bethesda.Fallout4.TextureSet(mod.GetNextFormKey(), Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)),
-        };
-        return WriteEditingFixture(directory, mod, records);
-    }
-
-    private static RecordEditingFixture CreateSkyrimEditingFixture(string directory)
-    {
-        var modKey = ModKey.FromNameAndExtension("Base.esm");
-        var mod = new Mutagen.Bethesda.Skyrim.SkyrimMod(modKey, Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE);
-        var records = new Dictionary<string, IMajorRecord>
-        {
-            ["Armor"] = Add(mod.Armors, new Mutagen.Bethesda.Skyrim.Armor(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Book"] = Add(mod.Books, new Mutagen.Bethesda.Skyrim.Book(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)
+                Set("EditorID", RecordValue.FromString($"Source{descriptor.FamilyId}")),
+            };
+            if (descriptor.Fields.Any(field => field.Path == "Teaches" && field.Kind == RecordValueKind.Object))
             {
-                Teaches = new Mutagen.Bethesda.Skyrim.BookTeachesNothing(),
-            }),
-            ["Faction"] = Add(mod.Factions, new Mutagen.Bethesda.Skyrim.Faction(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["FormList"] = Add(mod.FormLists, new Mutagen.Bethesda.Skyrim.FormList(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Global"] = Add(mod.Globals, new Mutagen.Bethesda.Skyrim.GlobalFloat(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Keyword"] = Add(mod.Keywords, new Mutagen.Bethesda.Skyrim.Keyword(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Message"] = Add(mod.Messages, new Mutagen.Bethesda.Skyrim.Message(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Quest"] = Add(mod.Quests, new Mutagen.Bethesda.Skyrim.Quest(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["Race"] = Add(mod.Races, new Mutagen.Bethesda.Skyrim.Race(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-            ["TextureSet"] = Add(mod.TextureSets, new Mutagen.Bethesda.Skyrim.TextureSet(mod.GetNextFormKey(), Mutagen.Bethesda.Skyrim.SkyrimRelease.SkyrimSE)),
-        };
-        return WriteEditingFixture(directory, mod, records);
-    }
+                changes.Add(Set("Teaches", NoneTeachTarget()));
+            }
 
-    private static TRecord Add<TRecord>(IGroup<TRecord> group, TRecord record)
-        where TRecord : class, IMajorRecord
-    {
-        group.Add(record);
-        return record;
-    }
+            if (descriptor.FamilyId == "Global")
+            {
+                changes.Add(Set("Data", RecordValue.FromFloatingPoint(1.5)));
+            }
 
-    private static RecordEditingFixture WriteEditingFixture(
-        string directory,
-        IMod mod,
-        IReadOnlyDictionary<string, IMajorRecord> records)
-    {
-        foreach (var pair in records)
-        {
-            pair.Value.EditorID = $"Source{pair.Key}";
-        }
-
-        WritePlugin(mod, Path.Combine(directory, mod.ModKey.ToString()));
-        return new RecordEditingFixture(mod.ModKey, records.ToDictionary(pair => pair.Key, pair => pair.Value.FormKey));
+            return RecordMutation.Create(descriptor.FamilyId, changes);
+        }))).Records;
+        var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(result.Status == PluginSaveStatus.Succeeded, result.Diagnostic);
+        return new RecordEditingFixture(modKey, created.ToDictionary(record => record.FamilyId, record => record.FormKey));
     }
 
     private sealed class RecordEditingFixture

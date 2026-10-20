@@ -24,7 +24,7 @@ public sealed class RecordEditor
         }
     }
 
-    /// <summary>Gets the concrete first-tranche family descriptors for this workspace's game.</summary>
+    /// <summary>Gets the concrete family descriptors for this workspace's game.</summary>
     public IReadOnlyList<RecordFamilyDescriptor> Families => _families.Values
         .Select(family => family.Descriptor)
         .OrderBy(descriptor => descriptor.FamilyId, StringComparer.Ordinal)
@@ -164,14 +164,12 @@ public sealed class RecordEditor
                 throw new RecordEditingException($"Change set targets record identity '{duplicateIdentity.Key}' more than once.");
             }
 
-            foreach (var item in prepared)
-            {
-                item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
-            }
-
-            snapshots = prepared
-                .Select(item => CreateSnapshot(item.Family, item.Candidate, _workspace.Output.ModKey))
-                .ToArray();
+            snapshots = PublishWithRollback(prepared, initialNextFormId);
+        }
+        catch (RecordEditingException)
+        {
+            _workspace.MutableOutput.NextFormID = initialNextFormId;
+            throw;
         }
         catch
         {
@@ -179,7 +177,6 @@ public sealed class RecordEditor
             throw;
         }
 
-        PublishWithRollback(prepared, initialNextFormId);
         _workspace.MarkOutputChanged(snapshots);
         return new RecordApplyResult(_workspace.State.Revision, snapshots);
     }
@@ -195,42 +192,59 @@ public sealed class RecordEditor
 
     private PreparedMutation Prepare((RecordMutation Mutation, RecordFamily Family) item)
     {
-        IMajorRecord candidate;
         switch (item.Mutation.Kind)
         {
             case RecordMutationKind.Create:
-                candidate = item.Family.CreateCandidate(_workspace.MutableOutput);
-                break;
+                return new PreparedMutation(item.Mutation, item.Family, item.Family.CreateCandidate(_workspace.MutableOutput), null, null, editInPlace: false);
             case RecordMutationKind.Override:
                 if (item.Mutation.FormKey is not { } formKey || item.Mutation.ContainingModKey is not { } containingModKey)
                 {
                     throw new RecordEditingException($"Override mutation for family '{item.Mutation.FamilyId}' is missing its exact record context.");
                 }
 
-                candidate = item.Family.CopyCandidate(ResolveExactRecord(item.Family, formKey, containingModKey));
-                break;
+                var existing = item.Family.FindOutputRecord(_workspace.MutableOutput, formKey) as IMajorRecord;
+                var rollback = existing is null ? null : item.Family.CopyCandidate(existing);
+                if (containingModKey == _workspace.Output.ModKey)
+                {
+                    var live = existing
+                        ?? throw new RecordEditingException($"Output '{containingModKey}' does not contain declared family '{item.Family.Descriptor.FamilyId}' record '{formKey}'.");
+                    return new PreparedMutation(item.Mutation, item.Family, live, rollback, null, editInPlace: true);
+                }
+
+                var context = ResolveOverrideContext(item.Family, formKey, containingModKey);
+                var source = context.Record as IMajorRecordGetter
+                    ?? throw new RecordEditingException($"Resolved context '{containingModKey}:{formKey}' is not a Mutagen major record.");
+                return new PreparedMutation(item.Mutation, item.Family, item.Family.CopyCandidate(source), rollback, context, editInPlace: false);
             default:
                 throw new RecordEditingException($"Unknown record mutation kind '{item.Mutation.Kind}'.");
         }
-
-        var currentOutput = item.Family.FindOutputRecord(_workspace.MutableOutput, candidate.FormKey);
-        var rollback = currentOutput is null ? null : item.Family.CopyCandidate(currentOutput);
-        return new PreparedMutation(item.Mutation, item.Family, candidate, rollback);
     }
 
-    private void PublishWithRollback(IReadOnlyList<PreparedMutation> prepared, uint initialNextFormId)
+    private RecordSnapshot[] PublishWithRollback(IReadOnlyList<PreparedMutation> prepared, uint initialNextFormId)
     {
+        var output = _workspace.MutableOutput;
+        var preserved = output.EnumerateMajorRecords().Select(record => record.FormKey).ToHashSet();
         var published = new List<PreparedMutation>(prepared.Count);
+        var snapshots = new List<RecordSnapshot>(prepared.Count);
         try
         {
             foreach (var item in prepared)
             {
-                item.Family.Publish(_workspace.MutableOutput, item.Candidate);
+                var record = PublishOne(output, item);
                 published.Add(item);
+                var changedPaths = item.Mutation.Changes.Select(change => change.Path).ToHashSet(StringComparer.Ordinal);
+                snapshots.Add(CreateSnapshot(item.Family, record, output.ModKey, changedPaths));
             }
+
+            return snapshots.ToArray();
         }
         catch (Exception publicationException)
         {
+            if (published.Count == 0)
+            {
+                throw;
+            }
+
             var rollbackExceptions = new List<Exception>();
             for (var index = published.Count - 1; index >= 0; index--)
             {
@@ -239,11 +253,12 @@ public sealed class RecordEditor
                 {
                     if (item.Rollback is null)
                     {
-                        item.Family.Remove(_workspace.MutableOutput, item.Candidate.FormKey);
+                        item.Family.Remove(output, item.Candidate.FormKey);
+                        MutagenRecordPlacement.PruneCreatedParents(output, preserved);
                     }
                     else
                     {
-                        item.Family.Publish(_workspace.MutableOutput, item.Rollback);
+                        item.Family.Publish(output, item.Rollback);
                     }
                 }
                 catch (Exception rollbackException)
@@ -259,8 +274,51 @@ public sealed class RecordEditor
                     new AggregateException([publicationException, .. rollbackExceptions]));
             }
 
-            _workspace.MutableOutput.NextFormID = initialNextFormId;
+            output.NextFormID = initialNextFormId;
             throw new RecordEditingException("Record publication failed; the prior in-memory output was restored.", publicationException);
+        }
+    }
+
+    private static IMajorRecord PublishOne(IMod output, PreparedMutation item)
+    {
+        if (item.Mutation.Kind == RecordMutationKind.Create)
+        {
+            item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
+            item.Family.ReadFields(item.Candidate);
+            item.Family.Publish(output, item.Candidate);
+            return item.Candidate;
+        }
+
+        if (item.EditInPlace)
+        {
+            item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
+            return item.Candidate;
+        }
+
+        if (item.Context is not null && item.Family.TryPlaceOverride(output, item.Context, out var placed))
+        {
+            item.Family.ApplyChanges(placed, item.Mutation.Changes);
+            return placed;
+        }
+
+        item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
+        item.Family.Publish(output, item.Candidate);
+        return item.Candidate;
+    }
+
+    private IModContext ResolveOverrideContext(RecordFamily family, FormKey formKey, ModKey containingModKey)
+    {
+        try
+        {
+            return _workspace.ResolveRecordCore(formKey, family.GetterType, containingModKey).ExactContext;
+        }
+        catch (RecordEditingException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new RecordEditingException($"Could not resolve exact '{family.Descriptor.FamilyId}' context '{containingModKey}:{formKey}': {exception.Message}", exception);
         }
     }
 
@@ -305,9 +363,13 @@ public sealed class RecordEditor
         }
     }
 
-    private static RecordSnapshot CreateSnapshot(RecordFamily family, IMajorRecordGetter record, ModKey containingModKey)
+    private static RecordSnapshot CreateSnapshot(
+        RecordFamily family,
+        IMajorRecordGetter record,
+        ModKey containingModKey,
+        IReadOnlySet<string>? changedPaths = null)
     {
-        return new RecordSnapshot(family.Descriptor.FamilyId, record.FormKey, containingModKey, family.ReadFields(record));
+        return new RecordSnapshot(family.Descriptor.FamilyId, record.FormKey, containingModKey, family.ReadFields(record), changedPaths);
     }
 
     private RecordFamily GetFamily(string familyId)
@@ -323,12 +385,16 @@ public sealed class RecordEditor
             RecordMutation mutation,
             RecordFamily family,
             IMajorRecord candidate,
-            IMajorRecord? rollback)
+            IMajorRecord? rollback,
+            IModContext? context,
+            bool editInPlace)
         {
             Mutation = mutation;
             Family = family;
             Candidate = candidate;
             Rollback = rollback;
+            Context = context;
+            EditInPlace = editInPlace;
         }
 
         public RecordMutation Mutation { get; }
@@ -338,5 +404,9 @@ public sealed class RecordEditor
         public IMajorRecord Candidate { get; }
 
         public IMajorRecord? Rollback { get; }
+
+        public IModContext? Context { get; }
+
+        public bool EditInPlace { get; }
     }
 }
