@@ -105,17 +105,7 @@ jobs:
             - name: Publish Windows applications
               shell: pwsh
               run: |
-                  New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/mcp -Force | Out-Null
-
-                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj `
-                    --configuration Release `
-                    --runtime win-x64 `
-                    --self-contained true `
-                    --output ./artifacts/publish/windows/desktop `
-                    -p:Version=$env:PACKAGE_VERSION `
-                    -p:AssemblyVersion=$env:ASSEMBLY_VERSION `
-                    -p:FileVersion=$env:ASSEMBLY_VERSION
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj `
                     --configuration Release `
@@ -129,17 +119,10 @@ jobs:
             - name: Package Windows ZIPs
               shell: pwsh
               run: |
-                  Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
-                  Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
-                  Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/desktop
                   Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/mcp
                   Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/mcp
                   Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/mcp
 
-                  Compress-Archive `
-                    -Path ./artifacts/publish/windows/desktop/* `
-                    -DestinationPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
-                    -Force
                   Compress-Archive `
                     -Path ./artifacts/publish/windows/mcp/* `
                     -DestinationPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
@@ -149,19 +132,10 @@ jobs:
               shell: pwsh
               timeout-minutes: 15
               run: |
-                  $desktopValidationRoot = './artifacts/validation/windows/desktop'
                   $mcpValidationRoot = './artifacts/validation/windows/mcp'
-                  Expand-Archive `
-                    -LiteralPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
-                    -DestinationPath $desktopValidationRoot
                   Expand-Archive `
                     -LiteralPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
                     -DestinationPath $mcpValidationRoot
-
-                  $desktopExecutable = Join-Path $desktopValidationRoot 'CreationsForgeWorkbench.exe'
-                  if (-not (Test-Path -LiteralPath $desktopExecutable -PathType Leaf)) {
-                      throw "The Windows desktop archive does not contain CreationsForgeWorkbench.exe."
-                  }
 
                   $env:CREATIONSFORGE_PACKAGED_MCP_PATH = (Resolve-Path (Join-Path $mcpValidationRoot 'CreationsForge.Mcp.exe')).Path
                   & dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll `
@@ -191,21 +165,13 @@ jobs:
                   }
 
                   & $compilerPath `
-                    "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
                     "/DMcpSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/mcp).Path)" `
                     "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
-                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge.Workbench/Resources/AppIcon/CreationsForge.ico).Path)" `
+                    "/DInstallerIconFile=$((Resolve-Path ./Packaging/Windows/CreationsForge.ico).Path)" `
                     "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
                     "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
                     "/DApplicationVersion=$env:PACKAGE_VERSION" `
                     ./Packaging/Windows/CreationsForge.iss
-
-            - name: Upload Windows desktop ZIP
-              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-              with:
-                  name: CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}
-                  path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
-                  if-no-files-found: error
 
             - name: Upload Windows MCP ZIP
               uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -266,17 +232,7 @@ jobs:
             - name: Publish Linux applications
               shell: bash
               run: |
-                  mkdir -p ./artifacts/publish/linux/desktop
                   mkdir -p ./artifacts/publish/linux/mcp
-
-                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
-                    --configuration Release \
-                    --runtime linux-x64 \
-                    --self-contained true \
-                    --output ./artifacts/publish/linux/desktop \
-                    -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
-                    -p:FileVersion="$ASSEMBLY_VERSION"
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
@@ -290,14 +246,10 @@ jobs:
             - name: Package Linux ZIPs
               shell: bash
               run: |
-                  cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
-                  cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
-                  cp ./CHANGELOG.md ./artifacts/publish/linux/desktop/
                   cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/mcp/
                   cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/mcp/
                   cp ./CHANGELOG.md ./artifacts/publish/linux/mcp/
 
-                  (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
                   (cd ./artifacts/publish/linux/mcp && zip -r ../../../CreationsForge-Mcp-linux-x64-"$PACKAGE_VERSION".zip .)
 
             - name: Package Debian installer
@@ -305,41 +257,25 @@ jobs:
               run: |
                   package_root="./artifacts/debian/package"
                   app_root="$package_root/opt/CreationsForge"
-                  desktop_app="$app_root/Desktop"
                   mcp_app="$app_root/Mcp"
                   control_dir="$package_root/DEBIAN"
                   launcher_dir="$package_root/usr/bin"
-                  desktop_entry_dir="$package_root/usr/share/applications"
-                  icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
-                  mkdir -p "$desktop_app"
                   mkdir -p "$mcp_app"
                   mkdir -p "$control_dir"
                   mkdir -p "$launcher_dir"
-                  mkdir -p "$desktop_entry_dir"
-                  mkdir -p "$icon_dir"
 
-                  cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
                   cp -r ./artifacts/publish/linux/mcp/. "$mcp_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
                   cp ./CHANGELOG.md "$app_root/"
-                  cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
-                  cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
-
-                  cat > "$launcher_dir/creationsforge" <<'EOF'
-                  #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Desktop/CreationsForgeWorkbench "$@"
-                  EOF
 
                   cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
                   #!/usr/bin/env bash
                   exec /opt/CreationsForge/Mcp/CreationsForge.Mcp "$@"
                   EOF
 
-                  chmod +x "$launcher_dir/creationsforge"
                   chmod +x "$launcher_dir/creationsforge-mcp"
-                  chmod +x "$desktop_app/CreationsForgeWorkbench"
                   chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   cat > "$control_dir/control" <<EOF
@@ -348,10 +284,9 @@ jobs:
                   Section: utils
                   Priority: optional
                   Architecture: amd64
-                  Depends: libgl1, dbus, libfontconfig1, libxrandr2, libxi6
                   Maintainer: $APPLICATION_PUBLISHER
-                  Description: Multi-game Bethesda FormList browser and editor
-                   $APPLICATION_DISPLAY_NAME browses, compares, and edits FormLists in Bethesda plugins.
+                  Description: Local MCP host for Creations Forge
+                   $APPLICATION_DISPLAY_NAME exposes Bethesda plugin authoring tools over stdio MCP.
                   EOF
 
                   dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
@@ -360,31 +295,19 @@ jobs:
               shell: bash
               timeout-minutes: 15
               run: |
-                  desktop_validation_root="./artifacts/validation/linux/desktop"
                   mcp_validation_root="./artifacts/validation/linux/mcp"
                   deb_validation_root="./artifacts/validation/linux/deb"
-                  mkdir -p "$desktop_validation_root" "$mcp_validation_root" "$deb_validation_root"
-                  unzip -q ./artifacts/CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip -d "$desktop_validation_root"
+                  mkdir -p "$mcp_validation_root" "$deb_validation_root"
                   unzip -q ./artifacts/CreationsForge-Mcp-linux-x64-"$PACKAGE_VERSION".zip -d "$mcp_validation_root"
                   dpkg-deb --extract ./artifacts/CreationsForge_"${PACKAGE_VERSION}"_amd64.deb "$deb_validation_root"
 
-                  test -x "$desktop_validation_root/CreationsForgeWorkbench"
-                  test -x "$deb_validation_root/usr/bin/creationsforge"
                   test -x "$deb_validation_root/usr/bin/creationsforge-mcp"
-                  test -x "$deb_validation_root/opt/CreationsForge/Desktop/CreationsForgeWorkbench"
                   test -x "$deb_validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
 
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_validation_root#./}/CreationsForge.Mcp"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
                     -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
-
-            - name: Upload Linux desktop ZIP
-              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-              with:
-                  name: CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}
-                  path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
-                  if-no-files-found: error
 
             - name: Upload Linux MCP ZIP
               uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -441,17 +364,7 @@ jobs:
             - name: Publish Arch Linux applications
               shell: bash
               run: |
-                  mkdir -p ./artifacts/publish/arch/desktop
                   mkdir -p ./artifacts/publish/arch/mcp
-
-                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
-                    --configuration Release \
-                    --runtime linux-x64 \
-                    --self-contained true \
-                    --output ./artifacts/publish/arch/desktop \
-                    -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
-                    -p:FileVersion="$ASSEMBLY_VERSION"
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
@@ -468,40 +381,24 @@ jobs:
                   build_dir="./artifacts/arch/build"
                   package_root="$build_dir/package-root"
                   app_root="$package_root/opt/CreationsForge"
-                  desktop_app="$app_root/Desktop"
                   mcp_app="$app_root/Mcp"
                   launcher_dir="$package_root/usr/bin"
-                  desktop_entry_dir="$package_root/usr/share/applications"
-                  icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
-                  mkdir -p "$desktop_app"
                   mkdir -p "$mcp_app"
                   mkdir -p "$launcher_dir"
-                  mkdir -p "$desktop_entry_dir"
-                  mkdir -p "$icon_dir"
 
-                  cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
                   cp -r ./artifacts/publish/arch/mcp/. "$mcp_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
                   cp ./CHANGELOG.md "$app_root/"
-                  cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
-                  cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
                   cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
-
-                  cat > "$launcher_dir/creationsforge" <<'EOF'
-                  #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Desktop/CreationsForgeWorkbench "$@"
-                  EOF
 
                   cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
                   #!/usr/bin/env bash
                   exec /opt/CreationsForge/Mcp/CreationsForge.Mcp "$@"
                   EOF
 
-                  chmod +x "$launcher_dir/creationsforge"
                   chmod +x "$launcher_dir/creationsforge-mcp"
-                  chmod +x "$desktop_app/CreationsForgeWorkbench"
                   chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
@@ -533,9 +430,7 @@ jobs:
                   mkdir -p "$validation_root"
                   bsdtar -xf "$package_path" -C "$validation_root"
 
-                  test -x "$validation_root/usr/bin/creationsforge"
                   test -x "$validation_root/usr/bin/creationsforge-mcp"
-                  test -x "$validation_root/opt/CreationsForge/Desktop/CreationsForgeWorkbench"
                   test -x "$validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
 
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${validation_root#./}/opt/CreationsForge/Mcp/CreationsForge.Mcp"
@@ -600,18 +495,8 @@ jobs:
             - name: Publish macOS applications
               shell: bash
               run: |
-                  desktop_publish_root="./artifacts/publish/macos/$PACKAGE_RID/desktop"
                   mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
-                  mkdir -p "$desktop_publish_root" "$mcp_publish_root"
-
-                  dotnet publish ./CreationsForge.Workbench/CreationsForge.Workbench.csproj \
-                    --configuration Release \
-                    --runtime "$PACKAGE_RID" \
-                    --self-contained true \
-                    --output "$desktop_publish_root" \
-                    -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
-                    -p:FileVersion="$ASSEMBLY_VERSION"
+                  mkdir -p "$mcp_publish_root"
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
@@ -625,29 +510,15 @@ jobs:
             - name: Package macOS archives
               shell: bash
               run: |
-                  desktop_publish_root="./artifacts/publish/macos/$PACKAGE_RID/desktop"
                   mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
-                  app_root="./artifacts/package/macos/$PACKAGE_RID/CreationsForge.app"
-                  contents_root="$app_root/Contents"
-                  resources_root="$contents_root/Resources"
-                  desktop_archive="./artifacts/CreationsForge-Desktop-$PACKAGE_RID-$PACKAGE_VERSION.zip"
                   mcp_archive="$GITHUB_WORKSPACE/artifacts/CreationsForge-Mcp-$PACKAGE_RID-$PACKAGE_VERSION.tar.gz"
 
-                  mkdir -p "$contents_root/MacOS" "$resources_root/Documentation"
-                  cp -R "$desktop_publish_root/." "$contents_root/MacOS/"
-                  cp ./Packaging/MacOS/Info.plist "$contents_root/Info.plist"
-                  cp ./Documentation/KNOWN-ISSUES.md "$resources_root/Documentation/"
-                  cp ./Documentation/ROADMAP.md "$resources_root/Documentation/"
-                  cp ./CHANGELOG.md "$resources_root/Documentation/"
+                  mkdir -p "$mcp_publish_root"
                   cp ./Documentation/KNOWN-ISSUES.md "$mcp_publish_root/"
                   cp ./Documentation/ROADMAP.md "$mcp_publish_root/"
                   cp ./CHANGELOG.md "$mcp_publish_root/"
 
-                  chmod +x "$contents_root/MacOS/CreationsForgeWorkbench"
                   chmod +x "$mcp_publish_root/CreationsForge.Mcp"
-                  plutil -replace CFBundleShortVersionString -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
-                  plutil -replace CFBundleVersion -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
-                  ditto -c -k --keepParent "$app_root" "$desktop_archive"
                   tar -C "$mcp_publish_root" -czf "$mcp_archive" .
 
             - name: Validate macOS package contents and MCP executable
@@ -656,21 +527,14 @@ jobs:
               env:
                   EXPECTED_BINARY_ARCHITECTURE: ${{ matrix.binary-architecture }}
               run: |
-                  desktop_archive="./artifacts/CreationsForge-Desktop-$PACKAGE_RID-$PACKAGE_VERSION.zip"
                   mcp_archive="./artifacts/CreationsForge-Mcp-$PACKAGE_RID-$PACKAGE_VERSION.tar.gz"
                   validation_root="./artifacts/validation/macos/$PACKAGE_RID"
-                  desktop_validation_root="$validation_root/desktop"
                   mcp_validation_root="$validation_root/mcp"
-                  mkdir -p "$desktop_validation_root" "$mcp_validation_root"
-                  ditto -x -k "$desktop_archive" "$desktop_validation_root"
+                  mkdir -p "$mcp_validation_root"
                   tar -C "$mcp_validation_root" -xzf "$mcp_archive"
 
-                  desktop_executable="$desktop_validation_root/CreationsForge.app/Contents/MacOS/CreationsForgeWorkbench"
                   mcp_executable="$mcp_validation_root/CreationsForge.Mcp"
-                  test -x "$desktop_executable"
                   test -x "$mcp_executable"
-                  plutil -lint "$desktop_validation_root/CreationsForge.app/Contents/Info.plist"
-                  lipo -archs "$desktop_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
                   lipo -archs "$mcp_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
 
                   canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)"
@@ -681,13 +545,6 @@ jobs:
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
                     -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests
-
-            - name: Upload macOS desktop archive
-              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-              with:
-                  name: CreationsForge-Desktop-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}
-                  path: artifacts/CreationsForge-Desktop-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}.zip
-                  if-no-files-found: error
 
             - name: Upload macOS MCP archive
               uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -746,16 +603,12 @@ jobs:
               shell: pwsh
               run: |
                   $expectedNames = @(
-                      "CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge-Setup-$env:PACKAGE_VERSION.exe",
-                      "CreationsForge-Desktop-linux-x64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge-Mcp-linux-x64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge_$($env:PACKAGE_VERSION)_amd64.deb",
                       "creationsforge-$env:PACKAGE_VERSION-1-x86_64.pkg.tar.zst",
-                      "CreationsForge-Desktop-osx-x64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge-Mcp-osx-x64-$env:PACKAGE_VERSION.tar.gz",
-                      "CreationsForge-Desktop-osx-arm64-$env:PACKAGE_VERSION.zip",
                       "CreationsForge-Mcp-osx-arm64-$env:PACKAGE_VERSION.tar.gz"
                   )
                   $actualNames = @(
