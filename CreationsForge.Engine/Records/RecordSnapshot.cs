@@ -10,16 +10,19 @@ public sealed class RecordSnapshot
     /// <param name="formKey">The record's origin identity.</param>
     /// <param name="containingModKey">The plugin containing this exact version.</param>
     /// <param name="values">Registered field values keyed by discovered path.</param>
+    /// <param name="changedPaths">Paths this edit changed. Save verification compares these and leaves untouched Mutagen defaults alone.</param>
     public RecordSnapshot(
         string familyId,
         FormKey formKey,
         ModKey containingModKey,
-        IReadOnlyDictionary<string, RecordValue> values)
+        IReadOnlyDictionary<string, RecordValue> values,
+        IReadOnlySet<string>? changedPaths = null)
     {
         FamilyId = familyId;
         FormKey = formKey;
         ContainingModKey = containingModKey;
         Values = values;
+        ChangedPaths = changedPaths;
     }
 
     /// <summary>Gets the declared family identifier.</summary>
@@ -33,4 +36,7 @@ public sealed class RecordSnapshot
 
     /// <summary>Gets registered field values keyed by discovered path.</summary>
     public IReadOnlyDictionary<string, RecordValue> Values { get; }
+
+    /// <summary>Gets the paths this edit changed, when save verification should ignore untouched members.</summary>
+    public IReadOnlySet<string>? ChangedPaths { get; }
 }
