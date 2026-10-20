@@ -3,14 +3,22 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Starfield;
 using Noggog;
+using Activator = Mutagen.Bethesda.Starfield.Activator;
 
 namespace CreationsForge.Starfield;
 
-/// <summary>Declares the first bounded Starfield record editing tranche.</summary>
-internal static class StarfieldRecordFamilies
+/// <summary>Declares the Starfield record families the engine can create, override, and edit.</summary>
+internal static partial class StarfieldRecordFamilies
 {
-    /// <summary>Gets all concrete record family registrations for the tranche.</summary>
-    public static IReadOnlyList<RecordFamily> All { get; } =
+    /// <summary>Gets all concrete record family registrations.</summary>
+    public static IReadOnlyList<RecordFamily> All { get; private set; } = [];
+
+    static StarfieldRecordFamilies()
+    {
+        All = [..Core, ..Additional, ..ConcreteTypes];
+    }
+
+    private static IReadOnlyList<RecordFamily> Core { get; } =
     [
         Family<FormList, IFormListGetter>("FormList", key => new FormList(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.FormLists,
             RecordFields.TranslatedString<FormList, IFormListGetter>("Name", false, getter => getter.Name, (record, value) => record.Name = value!),
@@ -63,6 +71,73 @@ internal static class StarfieldRecordFamilies
                 ["Spell"] = typeof(ISpellGetter),
             }),
             RecordFields.FormLinkList<Book, IBookGetter>("Keywords", [typeof(IKeywordGetter)], getter => getter.Keywords?.Select(item => item.FormKey).ToArray() ?? [], ReplaceBookKeywords)),
+        Family<Activator, IActivatorGetter>("Activator", key => new Activator(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Activators,
+            RecordFields.TranslatedString<Activator, IActivatorGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Activator, IActivatorGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Activator, IActivatorGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.TranslatedString<Activator, IActivatorGetter>("ActivateTextOverride", true, getter => getter.ActivateTextOverride, (record, value) => record.ActivateTextOverride = value),
+            RecordFields.Enum<Activator, IActivatorGetter, Activator.Flag>("Flags", true, getter => getter.Flags, (record, value) => record.Flags = value)),
+        Family<Ammunition, IAmmunitionGetter>("Ammunition", key => new Ammunition(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Ammunitions,
+            RecordFields.TranslatedString<Ammunition, IAmmunitionGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            RecordFields.TranslatedString<Ammunition, IAmmunitionGetter>("Description", false, getter => getter.Description, (record, value) => record.Description = value!),
+            RecordFields.UInt32<Ammunition, IAmmunitionGetter>("Value", getter => getter.Value, (record, value) => record.Value = value),
+            RecordFields.Single<Ammunition, IAmmunitionGetter>("Weight", getter => getter.Weight, (record, value) => record.Weight = value),
+            KeywordList<Ammunition, IAmmunitionGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.Enum<Ammunition, IAmmunitionGetter, Ammunition.Flag>("Flags", false, getter => getter.Flags, (record, value) => record.Flags = value!.Value)),
+        Family<Container, IContainerGetter>("Container", key => new Container(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Containers,
+            RecordFields.TranslatedString<Container, IContainerGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Container, IContainerGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Container, IContainerGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.Enum<Container, IContainerGetter, Container.Flag>("Flags", false, getter => getter.Flags, (record, value) => record.Flags = value!.Value)),
+        Family<Door, IDoorGetter>("Door", key => new Door(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Doors,
+            RecordFields.TranslatedString<Door, IDoorGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Door, IDoorGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Door, IDoorGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.Enum<Door, IDoorGetter, Door.Flag>("Flags", false, getter => getter.Flags, (record, value) => record.Flags = value!.Value),
+            RecordFields.TranslatedString<Door, IDoorGetter>("AlternateTextOpen", true, getter => getter.AlternateTextOpen, (record, value) => record.AlternateTextOpen = value),
+            RecordFields.TranslatedString<Door, IDoorGetter>("AlternateTextClose", true, getter => getter.AlternateTextClose, (record, value) => record.AlternateTextClose = value)),
+        Family<Flora, IFloraGetter>("Flora", key => new Flora(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Florae,
+            RecordFields.TranslatedString<Flora, IFloraGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Flora, IFloraGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Flora, IFloraGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.TranslatedString<Flora, IFloraGetter>("ActivateTextOverride", true, getter => getter.ActivateTextOverride, (record, value) => record.ActivateTextOverride = value)),
+        Family<Furniture, IFurnitureGetter>("Furniture", key => new Furniture(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Furniture,
+            RecordFields.TranslatedString<Furniture, IFurnitureGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Furniture, IFurnitureGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Furniture, IFurnitureGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.TranslatedString<Furniture, IFurnitureGetter>("ActivateTextOverride", true, getter => getter.ActivateTextOverride, (record, value) => record.ActivateTextOverride = value),
+            RecordFields.Enum<Furniture, IFurnitureGetter, Furniture.Flag>("Flags", true, getter => getter.Flags, (record, value) => record.Flags = value)),
+        Family<Ingestible, IIngestibleGetter>("Ingestible", key => new Ingestible(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Ingestibles,
+            RecordFields.TranslatedString<Ingestible, IIngestibleGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            RecordFields.TranslatedString<Ingestible, IIngestibleGetter>("Description", false, getter => getter.Description, (record, value) => record.Description = value!),
+            RecordFields.UInt32<Ingestible, IIngestibleGetter>("Value", getter => getter.Value, (record, value) => record.Value = value),
+            RecordFields.Single<Ingestible, IIngestibleGetter>("Weight", getter => getter.Weight, (record, value) => record.Weight = value),
+            KeywordList<Ingestible, IIngestibleGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.Enum<Ingestible, IIngestibleGetter, Ingestible.Flag>("Flags", false, getter => getter.Flags, (record, value) => record.Flags = value!.Value)),
+        Family<Key, IKeyGetter>("Key", key => new Key(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Keys,
+            RecordFields.TranslatedString<Key, IKeyGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Key, IKeyGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Key, IKeyGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.UInt32<Key, IKeyGetter>("Value", getter => getter.Value, (record, value) => record.Value = value),
+            RecordFields.Single<Key, IKeyGetter>("Weight", getter => getter.Weight, (record, value) => record.Weight = value)),
+        Family<LeveledItem, ILeveledItemGetter>("LeveledItem", key => new LeveledItem(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.LeveledItems,
+            FloatObjectBounds<LeveledItem, ILeveledItemGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            RecordFields.Enum<LeveledItem, ILeveledItemGetter, LeveledItem.Flag>("Flags", false, getter => getter.Flags, (record, value) => record.Flags = value!.Value),
+            RecordFields.TranslatedString<LeveledItem, ILeveledItemGetter>("OverrideName", true, getter => getter.OverrideName, (record, value) => record.OverrideName = value)),
+        Family<MiscItem, IMiscItemGetter>("MiscItem", key => new MiscItem(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.MiscItems,
+            RecordFields.TranslatedString<MiscItem, IMiscItemGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<MiscItem, IMiscItemGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<MiscItem, IMiscItemGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values)),
+            RecordFields.Int32<MiscItem, IMiscItemGetter>("Value", getter => getter.Value, (record, value) => record.Value = value),
+            RecordFields.Single<MiscItem, IMiscItemGetter>("Weight", getter => getter.Weight, (record, value) => record.Weight = value)),
+        Family<Static, IStaticGetter>("Static", key => new Static(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Statics,
+            RecordFields.TranslatedString<Static, IStaticGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            FloatObjectBounds<Static, IStaticGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value)),
+        Family<Weapon, IWeaponGetter>("Weapon", key => new Weapon(key, StarfieldRelease.Starfield), getter => getter.DeepCopy(), mod => mod.Weapons,
+            RecordFields.TranslatedString<Weapon, IWeaponGetter>("Name", true, getter => getter.Name, (record, value) => record.Name = value),
+            RecordFields.TranslatedString<Weapon, IWeaponGetter>("Description", true, getter => getter.Description, (record, value) => record.Description = value),
+            FloatObjectBounds<Weapon, IWeaponGetter>(getter => getter.ObjectBounds, (record, value) => record.ObjectBounds = value),
+            KeywordList<Weapon, IWeaponGetter>(getter => getter.Keywords, (record, values) => AssignKeywords(record.Keywords ??= [], values))),
     ];
 
     private static RecordFamily Family<TRecord, TGetter>(
@@ -113,6 +188,93 @@ internal static class StarfieldRecordFamilies
         {
             links.Add(new FormLink<IKeywordGetter>(value));
         }
+    }
+
+    private static void AssignKeywords(ICollection<IFormLinkGetter<IKeywordGetter>> links, IReadOnlyList<FormKey> values)
+    {
+        ReplaceKeywordLinks(links, values);
+    }
+
+    private static void AssignLinks<TTarget>(ICollection<IFormLinkGetter<TTarget>>? links, IReadOnlyList<FormKey> values)
+        where TTarget : class, IMajorRecordGetter
+    {
+        if (links is null)
+        {
+            throw new RecordEditingException("The link list is not initialized on this record.");
+        }
+
+        links.Clear();
+        foreach (var value in values)
+        {
+            links.Add(new FormLink<TTarget>(value));
+        }
+    }
+
+    private static RecordField<TRecord, TGetter> KeywordList<TRecord, TGetter>(
+        Func<TGetter, IEnumerable<IFormLinkGetter<IKeywordGetter>>?> read,
+        Action<TRecord, IReadOnlyList<FormKey>> replace)
+        where TRecord : class, IMajorRecord
+        where TGetter : class, IMajorRecordGetter
+    {
+        return RecordFields.FormLinkList<TRecord, TGetter>(
+            "Keywords",
+            [typeof(IKeywordGetter)],
+            getter => read(getter)?.Select(item => item.FormKey).ToArray() ?? [],
+            replace);
+    }
+
+    private static RecordField<TRecord, TGetter> FloatObjectBounds<TRecord, TGetter>(
+        Func<TGetter, IObjectBoundsGetter?> read,
+        Action<TRecord, ObjectBounds> write)
+        where TRecord : class, IMajorRecord
+        where TGetter : class, IMajorRecordGetter
+    {
+        return RecordFields.Object<TRecord, TGetter>(
+            "ObjectBounds",
+            false,
+            ["ObjectBounds"],
+            getter => ReadFloatBounds(read(getter)),
+            ValidateFloatBounds,
+            (record, value) => write(record, WriteFloatBounds(value)));
+    }
+
+    private static RecordValue ReadFloatBounds(IObjectBoundsGetter? bounds)
+    {
+        if (bounds is not { } value)
+        {
+            return RecordValue.Null;
+        }
+
+        return RecordValue.FromObject("ObjectBounds", new Dictionary<string, RecordValue>
+        {
+            ["First.X"] = RecordValue.FromFloatingPoint(value.First.X),
+            ["First.Y"] = RecordValue.FromFloatingPoint(value.First.Y),
+            ["First.Z"] = RecordValue.FromFloatingPoint(value.First.Z),
+            ["Second.X"] = RecordValue.FromFloatingPoint(value.Second.X),
+            ["Second.Y"] = RecordValue.FromFloatingPoint(value.Second.Y),
+            ["Second.Z"] = RecordValue.FromFloatingPoint(value.Second.Z),
+        });
+    }
+
+    private static void ValidateFloatBounds(RecordValue value)
+    {
+        var fields = ((RecordValue.ObjectRecordValue)value).Fields;
+        var expected = new[] { "First.X", "First.Y", "First.Z", "Second.X", "Second.Y", "Second.Z" };
+        if (fields.Count != expected.Length
+            || expected.Any(path => !fields.TryGetValue(path, out var field) || field is not RecordValue.FloatingPointRecordValue floating || floating.Value is < -float.MaxValue or > float.MaxValue))
+        {
+            throw new RecordEditingException("ObjectBounds requires exactly six finite Single child fields.");
+        }
+    }
+
+    private static ObjectBounds WriteFloatBounds(RecordValue value)
+    {
+        var fields = ((RecordValue.ObjectRecordValue)value).Fields;
+        return new ObjectBounds
+        {
+            First = new P3Float(Float(fields, "First.X"), Float(fields, "First.Y"), Float(fields, "First.Z")),
+            Second = new P3Float(Float(fields, "Second.X"), Float(fields, "Second.Y"), Float(fields, "Second.Z")),
+        };
     }
 
     private static RecordValue ReadObjectBounds(IArmorGetter record)

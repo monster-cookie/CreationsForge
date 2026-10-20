@@ -390,13 +390,15 @@ internal sealed class PluginSaveService
             }
 
             var record = family.FindOutputRecord(output, expected.FormKey)
-                ?? throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' is missing changed record '{expected.FormKey}'.");
+                ?? throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' is missing changed record '{expected.FormKey}' from family '{expected.FamilyId}'.");
             var actualValues = family.ReadFields(record);
-            if (actualValues.Count != expected.Values.Count
-                || expected.Values.Any(pair => !actualValues.TryGetValue(pair.Key, out var value)
-                    || !RecordValueComparer.Equals(pair.Value, value)))
+            var changedFields = expected.Values
+                .Where(pair => !actualValues.TryGetValue(pair.Key, out var value) || !RecordValueComparer.Equals(pair.Value, value))
+                .Select(pair => pair.Key)
+                .ToArray();
+            if (actualValues.Count != expected.Values.Count || changedFields.Length > 0)
             {
-                throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' changed registered values for '{expected.FamilyId}' record '{expected.FormKey}'.");
+                throw new PluginWorkspaceException($"Reopened output '{output.ModKey}' changed registered values for '{expected.FamilyId}' record '{expected.FormKey}': {string.Join(", ", changedFields)}.");
             }
         }
     }

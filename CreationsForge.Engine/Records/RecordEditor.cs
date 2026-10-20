@@ -24,7 +24,7 @@ public sealed class RecordEditor
         }
     }
 
-    /// <summary>Gets the concrete first-tranche family descriptors for this workspace's game.</summary>
+    /// <summary>Gets the concrete family descriptors for this workspace's game.</summary>
     public IReadOnlyList<RecordFamilyDescriptor> Families => _families.Values
         .Select(family => family.Descriptor)
         .OrderBy(descriptor => descriptor.FamilyId, StringComparer.Ordinal)

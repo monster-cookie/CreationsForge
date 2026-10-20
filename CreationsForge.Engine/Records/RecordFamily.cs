@@ -66,7 +66,7 @@ public abstract class RecordFamily
     }
 }
 
-/// <summary>Implements one record family through exact typed constructors, deep copies, and top-level Mutagen groups.</summary>
+/// <summary>Implements one record family through exact typed constructors, deep copies, and mutable output storage.</summary>
 /// <typeparam name="TMod">The exact mutable game mod interface.</typeparam>
 /// <typeparam name="TRecord">The exact mutable record type.</typeparam>
 /// <typeparam name="TGetter">The exact Mutagen getter interface.</typeparam>
@@ -77,7 +77,9 @@ public sealed class RecordFamily<TMod, TRecord, TGetter> : RecordFamily
 {
     private readonly Func<TMod, FormKey, TRecord> _create;
     private readonly Func<TGetter, TRecord> _copy;
-    private readonly Func<TMod, IGroup<TRecord>> _group;
+    private readonly Func<TMod, FormKey, IMajorRecordGetter?> _find;
+    private readonly Action<TMod, TRecord> _publish;
+    private readonly Func<TMod, FormKey, bool> _remove;
 
     /// <summary>Initializes a top-level record family registration.</summary>
     /// <param name="familyId">The stable family identifier.</param>
@@ -91,11 +93,40 @@ public sealed class RecordFamily<TMod, TRecord, TGetter> : RecordFamily
         Func<TGetter, TRecord> copy,
         Func<TMod, IGroup<TRecord>> group,
         IEnumerable<RecordField<TRecord, TGetter>> fields)
+        : this(
+            familyId,
+            create,
+            copy,
+            (mod, formKey) => group(mod).Records.FirstOrDefault(record => record.FormKey == formKey),
+            (mod, record) => group(mod).Set(record),
+            (mod, formKey) => group(mod).Remove(formKey),
+            fields)
+    {
+    }
+
+    /// <summary>Initializes a record family whose records live in a shared group or a parent record.</summary>
+    /// <param name="familyId">The stable family identifier.</param>
+    /// <param name="create">The exact typed detached-record constructor.</param>
+    /// <param name="copy">The exact typed Mutagen deep-copy operation.</param>
+    /// <param name="find">Locates one output record by FormKey.</param>
+    /// <param name="publish">Inserts or replaces the output record.</param>
+    /// <param name="remove">Removes the output record and any parent created only to hold it.</param>
+    /// <param name="fields">Family-specific registered field implementations.</param>
+    public RecordFamily(
+        string familyId,
+        Func<TMod, FormKey, TRecord> create,
+        Func<TGetter, TRecord> copy,
+        Func<TMod, FormKey, IMajorRecordGetter?> find,
+        Action<TMod, TRecord> publish,
+        Func<TMod, FormKey, bool> remove,
+        IEnumerable<RecordField<TRecord, TGetter>> fields)
         : base(CreateDescriptor(familyId, fields, out var registeredFields), registeredFields)
     {
         _create = create;
         _copy = copy;
-        _group = group;
+        _find = find;
+        _publish = publish;
+        _remove = remove;
     }
 
     internal override IMajorRecord CreateCandidate(IMod output)
@@ -116,7 +147,7 @@ public sealed class RecordFamily<TMod, TRecord, TGetter> : RecordFamily
 
     internal override IMajorRecordGetter? FindOutputRecord(IMod output, FormKey formKey)
     {
-        return _group(RequireMod(output)).Records.FirstOrDefault(record => record.FormKey == formKey);
+        return _find(RequireMod(output), formKey);
     }
 
     internal override void Publish(IMod output, IMajorRecord record)
@@ -126,12 +157,12 @@ public sealed class RecordFamily<TMod, TRecord, TGetter> : RecordFamily
             throw new RecordEditingException($"Record '{record.FormKey}' is not mutable family '{Descriptor.FamilyId}'.");
         }
 
-        _group(RequireMod(output)).Set(typedRecord);
+        _publish(RequireMod(output), typedRecord);
     }
 
     internal override bool Remove(IMod output, FormKey formKey)
     {
-        return _group(RequireMod(output)).Remove(formKey);
+        return _remove(RequireMod(output), formKey);
     }
 
     private static RecordFamilyDescriptor CreateDescriptor(
