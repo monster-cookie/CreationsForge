@@ -283,6 +283,9 @@ internal sealed class McpJson
         _node = node;
     }
 
+    /// <summary>Gets the underlying structured content for exact JSON comparison.</summary>
+    public JsonObject Node => _node;
+
     public string RequiredString(string name)
     {
         return OptionalString(name) ?? throw new InvalidOperationException($"Missing string '{name}' in {this}.");
@@ -501,7 +504,17 @@ internal static class McpRequests
         };
     }
 
-    public static JsonObject OutputCreate(string operationId, string workspaceId, string outputPath)
+    /// <summary>Builds full-master <c>output_create</c> arguments.</summary>
+    /// <param name="operationId">The client operation identifier.</param>
+    /// <param name="workspaceId">The pending session identifier.</param>
+    /// <param name="outputPath">The output plugin path.</param>
+    /// <param name="textStorageMode">The requested text storage mode: Embedded or Localized.</param>
+    /// <returns>The tool arguments.</returns>
+    public static JsonObject OutputCreate(
+        string operationId,
+        string workspaceId,
+        string outputPath,
+        string textStorageMode = "Embedded")
     {
         return new JsonObject
         {
@@ -509,14 +522,23 @@ internal static class McpRequests
             ["workspaceId"] = workspaceId,
             ["outputPath"] = outputPath,
             ["masterStyle"] = "Full",
-            ["textStorageMode"] = "Embedded",
+            ["textStorageMode"] = textStorageMode,
         };
     }
 
-    public static JsonObject OutputOpen(string operationId, string workspaceId, string outputPath)
+    /// <summary>Builds full-master <c>output_open</c> arguments.</summary>
+    /// <param name="operationId">The client operation identifier.</param>
+    /// <param name="workspaceId">The pending session identifier.</param>
+    /// <param name="outputPath">The existing output plugin path.</param>
+    /// <param name="textStorageMode">The text storage mode the output must already use.</param>
+    /// <returns>The tool arguments.</returns>
+    public static JsonObject OutputOpen(
+        string operationId,
+        string workspaceId,
+        string outputPath,
+        string textStorageMode = "Embedded")
     {
-        var request = OutputCreate(operationId, workspaceId, outputPath);
-        return request;
+        return OutputCreate(operationId, workspaceId, outputPath, textStorageMode);
     }
 
     public static JsonObject EditorIdChange(string editorId)
